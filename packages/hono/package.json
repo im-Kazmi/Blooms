@@ -1,0 +1,24 @@
+{
+  "name": "@repo/hono",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "format": "biome lint --write .",
+    "lint": "biome lint .",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false"
+  },
+  "dependencies": {
+    "@clerk/backend": "^1.21.0",
+    "@hono/clerk-auth": "^2.0.0",
+    "@repo/database": "workspace:*",
+    "hono-rate-limiter": "^0.4.2",
+    "svix": "^1.43.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "22.10.1",
+    "hono": "^4.6.13",
+    "typescript": "^5.7.2"
+  }
+}
