@@ -1,0 +1,1043 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AccountStatus {
+  CREATED
+  ONBOARDING_STARTED
+  UNDER_REVIEW
+  ACTIVE
+}
+
+enum BenefitType {
+  custom
+  ads
+  discord
+  github_repository
+  downloadables
+  license_keys
+}
+
+enum CheckoutStatus {
+  open
+  expired
+  confirmed
+  succeeded
+  failed
+}
+
+enum DiscountType {
+  fixed
+  percentage
+}
+
+enum DiscountDuration {
+  once
+  forever
+  repeating
+}
+
+enum FileServiceTypes {
+  downloadable
+  product_media
+  organization_avatar
+}
+
+enum IssueState {
+  OPEN
+  CLOSED
+}
+
+enum LicenseKeyStatus {
+  granted
+  revoked
+  disabled
+}
+
+enum OAuthPlatform {
+  github
+  github_repository_benefit
+  discord
+  google
+}
+
+enum PaymentProcessor {
+  stripe
+  open_collective
+}
+
+enum PledgeState {
+  initiated
+  created
+  pending
+  refunded
+  disputed
+  charge_disputed
+  cancelled
+}
+
+enum PledgeType {
+  pay_upfront
+  pay_on_completion
+  pay_directly
+}
+
+enum ProductPriceType {
+  one_time
+  recurring
+}
+
+enum ProductPriceAmountType {
+  fixed
+  custom
+  free
+}
+
+enum SubscriptionStatus {
+  incomplete
+  incomplete_expired
+  trialing
+  active
+  past_due
+  canceled
+  unpaid
+}
+
+enum TransactionType {
+  payment
+  processor_fee
+  refund
+  dispute
+  dispute_reversal
+  balance
+  payout
+}
+
+enum WebhookEventType {
+  checkout_created
+  checkout_updated
+  order_created
+  subscription_created
+  subscription_updated
+  subscription_active
+  subscription_canceled
+  subscription_revoked
+  product_created
+  product_updated
+  benefit_created
+  benefit_updated
+  benefit_grant_created
+  benefit_grant_updated
+  benefit_grant_revoked
+  organization_updated
+  pledge_created
+  pledge_updated
+}
+
+enum WebhookFormat {
+  raw
+  discord
+  slack
+}
+
+model Account {
+  id                      String        @id @default(uuid())
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+  accountType             String
+  adminId                 String
+  stripeId                String?
+  openCollectiveSlug      String?
+  email                   String?
+  country                 String
+  currency                String?
+  isDetailsSubmitted      Boolean
+  isChargesEnabled        Boolean
+  isPayoutsEnabled        Boolean
+  processorFeesApplicable Boolean       @default(true)
+  platformFeePercent      Int?
+  platformFeeFixed        Int?
+  businessType            String?
+  status                  AccountStatus @default(CREATED)
+  nextReviewThreshold     Int?
+  data                    Json          @default("{}")
+
+  admin         User           @relation("AccountAdmin", fields: [adminId], references: [id])
+  organizations Organization[] @relation("AccountOrganizations")
+  users         User[]         @relation("AccountUsers")
+  transactions  Transaction[]  @relation("AccountTransactions")
+  Organization  Organization[]
+  Transaction   Transaction[]
+  User          User[]
+}
+
+model Benefit {
+  id              String      @id @default(uuid())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  type            BenefitType
+  description     String
+  isTaxApplicable Boolean     @default(false)
+  selectable      Boolean     @default(true)
+  deletable       Boolean     @default(true)
+  properties      Json
+  organizationId  String
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  grants          BenefitGrant[]
+  productBenefits ProductBenefit[]
+  LicenseKey      LicenseKey[]
+}
+
+model BenefitGrant {
+  id             String    @id @default(uuid())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  grantedAt      DateTime?
+  revokedAt      DateTime?
+  properties     Json
+  userId         String
+  benefitId      String
+  subscriptionId String?
+  orderId        String?
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  benefit      Benefit       @relation(fields: [benefitId], references: [id], onDelete: Cascade)
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  order        Order?        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([subscriptionId, userId, benefitId])
+  @@index([userId])
+  @@index([benefitId])
+  @@index([subscriptionId])
+  @@index([orderId])
+}
+
+model Checkout {
+  id                       String         @id @default(uuid())
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
+  paymentProcessor         String
+  status                   CheckoutStatus @default(open)
+  clientSecret             String         @unique
+  expiresAt                DateTime
+  paymentProcessorMetadata Json
+  successUrl               String?
+  embedOrigin              String?
+  allowDiscountCodes       Boolean        @default(true)
+  amount                   Int?
+  taxAmount                Int?
+  currency                 String?
+  productId                String
+  productPriceId           String
+  discountId               String?
+  customerId               String?
+  customerName             String?
+  customerEmail            String?
+  customerIpAddress        String?
+  customerBillingAddress   Json?
+  customerTaxId            Json?
+  subscriptionId           String?
+
+  product            Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productPrice       ProductPrice         @relation(fields: [productPriceId], references: [id], onDelete: Cascade)
+  discount           Discount?            @relation(fields: [discountId], references: [id], onDelete: SetNull)
+  customer           User?                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  subscription       Subscription?        @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  order              Order?
+  DiscountRedemption DiscountRedemption[]
+}
+
+model CustomField {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  type           String
+  slug           String
+  name           String
+  properties     Json
+  organizationId String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([slug, organizationId])
+  @@index([type])
+  @@index([slug])
+}
+
+model Discount {
+  id               String           @id @default(uuid())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  name             String
+  type             DiscountType
+  code             String?
+  startsAt         DateTime?
+  endsAt           DateTime?
+  maxRedemptions   Int?
+  duration         DiscountDuration
+  durationInMonths Int?
+  stripeCouponId   String           @unique
+  organizationId   String
+
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  discountRedemptions DiscountRedemption[]
+  discountProducts    DiscountProduct[]
+  checkouts           Checkout[]
+  subscriptions       Subscription[]
+  Order               Order[]
+
+  @@unique([organizationId, code])
+}
+
+model DiscountProduct {
+  discountId String
+  productId  String
+
+  discount Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([discountId, productId])
+}
+
+model DiscountRedemption {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  discountId String
+  checkoutId String
+
+  discount Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  checkout Checkout @relation(fields: [checkoutId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id                   String           @id @default(uuid())
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  organizationId       String
+  name                 String
+  version              String?
+  path                 String
+  mimeType             String
+  size                 BigInt
+  service              FileServiceTypes
+  lastModifiedAt       DateTime?
+  storageVersion       String?
+  checksumEtag         String?
+  checksumSha256Base64 String?
+  checksumSha256Hex    String?
+  isUploaded           Boolean          @default(false)
+  isEnabled            Boolean          @default(false)
+
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ProductMedia ProductMedia[]
+}
+
+model Issue {
+  id                              String     @id @default(uuid())
+  createdAt                       DateTime   @default(now())
+  updatedAt                       DateTime   @updatedAt
+  platform                        String
+  externalId                      BigInt     @unique
+  organizationId                  String
+  repositoryId                    String
+  number                          Int
+  title                           String
+  body                            String?
+  comments                        Int?
+  author                          Json?
+  authorAssociation               String?
+  labels                          Json?
+  assignee                        Json?
+  assignees                       Json?
+  milestone                       Json?
+  closedBy                        Json?
+  reactions                       Json?
+  state                           IssueState
+  stateReason                     String?
+  issueClosedAt                   DateTime?
+  issueCreatedAt                  DateTime
+  issueModifiedAt                 DateTime?
+  externalLookupKey               String?    @unique
+  pledgeBadgeEmbeddedAt           DateTime?
+  pledgeBadgeEverEmbedded         Boolean    @default(false)
+  hasPledgeBadgeLabel             Boolean    @default(false)
+  badgeCustomContent              String?
+  githubIssueEtag                 String?
+  githubIssueFetchedAt            DateTime?
+  fundingGoal                     BigInt?
+  pledgedAmountSum                BigInt     @default(0)
+  lastPledgedAt                   DateTime?
+  issueHasInProgressRelationship  Boolean    @default(false)
+  issueHasPullRequestRelationship Boolean    @default(false)
+  positiveReactionsCount          Int        @default(0)
+  totalEngagementCount            Int        @default(0)
+  needsConfirmationSolved         Boolean    @default(false)
+  confirmedSolvedAt               DateTime?
+  confirmedSolvedBy               String?
+  upfrontSplitToContributors      Int?
+
+  organization Organization   @relation(fields: [organizationId], references: [id])
+  repository   Repository     @relation(fields: [repositoryId], references: [id])
+  pledges      Pledge[]
+  issueRewards IssueReward[]
+  Notification Notification[]
+
+  @@unique([organizationId, repositoryId, number])
+  @@index([title])
+}
+
+model IssueReward {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  issueId        String
+  shareThousands BigInt
+  githubUsername String?
+  organizationId String?
+  userId         String?
+
+  issue             Issue               @relation(fields: [issueId], references: [id])
+  organization      Organization?       @relation(fields: [organizationId], references: [id])
+  user              User?               @relation(fields: [userId], references: [id])
+  PledgeTransaction PledgeTransaction[]
+  Transaction       Transaction[]
+
+  @@unique([issueId, githubUsername])
+  @@unique([issueId, organizationId])
+  @@unique([issueId, userId])
+}
+
+model LicenseKey {
+  id               String           @id @default(uuid())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  organizationId   String
+  userId           String
+  benefitId        String
+  key              String
+  status           LicenseKeyStatus
+  limitActivations Int?
+  usage            Int              @default(0)
+  limitUsage       Int?
+  validations      Int              @default(0)
+  lastValidatedAt  DateTime?
+  expiresAt        DateTime?
+
+  organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  benefit      Benefit                @relation(fields: [benefitId], references: [id], onDelete: Cascade)
+  activations  LicenseKeyActivation[]
+}
+
+model LicenseKeyActivation {
+  id           String   @id @default(uuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  licenseKeyId String
+  label        String
+  conditions   Json
+  meta         Json
+
+  licenseKey LicenseKey @relation(fields: [licenseKeyId], references: [id], onDelete: Cascade)
+}
+
+model MagicLink {
+  id                String   @id @default(uuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  tokenHash         String
+  expiresAt         DateTime
+  userEmail         String
+  userId            String?
+  source            String?
+  signupAttribution Json
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+}
+
+model Notification {
+  id             String  @id @default(uuid())
+  userId         String?
+  emailAddr      String?
+  organizationId String?
+  type           String
+  issueId        String?
+  pledgeId       String?
+  payload        Json?
+
+  issue  Issue?  @relation(fields: [issueId], references: [id])
+  pledge Pledge? @relation(fields: [pledgeId], references: [id])
+}
+
+model OAuthAccount {
+  id                    String        @id @default(uuid())
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  platform              OAuthPlatform
+  accessToken           String
+  expiresAt             Int?
+  refreshToken          String?
+  refreshTokenExpiresAt Int?
+  accountId             String
+  accountEmail          String
+  accountUsername       String?
+  userId                String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([platform, accountId])
+  @@index([userId, platform])
+}
+
+model Order {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  amount          Int
+  taxAmount       Int
+  currency        String
+  billingReason   String
+  billingAddress  Json?
+  stripeInvoiceId String?
+  userId          String
+  productId       String
+  productPriceId  String
+  discountId      String?
+  subscriptionId  String?
+  checkoutId      String?
+
+  user          User           @relation(fields: [userId], references: [id])
+  product       Product        @relation(fields: [productId], references: [id])
+  productPrice  ProductPrice   @relation(fields: [productPriceId], references: [id])
+  discount      Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
+  subscription  Subscription?  @relation(fields: [subscriptionId], references: [id])
+  checkout      Checkout?      @relation(fields: [checkoutId], references: [id], onDelete: SetNull)
+  benefitGrants BenefitGrant[]
+  Transaction   Transaction[]
+}
+
+model Organization {
+  id                                String    @id @default(uuid())
+  createdAt                         DateTime  @default(now())
+  updatedAt                         DateTime  @updatedAt
+  name                              String
+  slug                              String    @unique
+  avatarUrl                         String?
+  accountId                         String?
+  pledgeBadgeShowAmount             Boolean   @default(true)
+  pledgeMinimumAmount               Int
+  defaultBadgeCustomContent         String?
+  defaultUpfrontSplitToContributors Int?
+  onboardedAt                       DateTime?
+  blockedAt                         DateTime?
+  createdFromUserMaintainerUpgrade  Boolean   @default(false)
+  isTeamsEnabled                    Boolean   @default(false)
+  stripeCustomerId                  String?   @unique
+  billingEmail                      String?
+  totalMonthlySpendingLimit         Int?
+  perUserMonthlySpendingLimit       Int?
+  profileSettings                   Json
+  featureSettings                   Json
+  bio                               String?
+  company                           String?
+  blog                              String?
+  location                          String?
+  email                             String?
+  twitterUsername                   String?
+
+  account              Account?               @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  benefits             Benefit[]
+  customFields         CustomField[]
+  discounts            Discount[]
+  files                File[]
+  issues               Issue[]
+  issueRewards         IssueReward[]
+  licenseKeys          LicenseKey[]
+  products             Product[]
+  repositories         Repository[]
+  userOrganizations    UserOrganization[]
+  ExternalOrganization ExternalOrganization[]
+  Transaction          Transaction[]
+  WebhookEndpoint      WebhookEndpoint[]
+  Account              Account?               @relation(fields: [accountId], references: [id])
+  pledges              Pledge[]
+  Pledge               Pledge[]
+  Pledge               Pledge[]
+}
+
+model PersonalAccessToken {
+  id         String    @id @default(uuid())
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  token      String    @unique
+  scope      String
+  expiresAt  DateTime?
+  comment    String
+  lastUsedAt DateTime?
+  userId     String
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([expiresAt])
+}
+
+model Pledge {
+  id                       String      @id @default(uuid())
+  createdAt                DateTime    @default(now())
+  updatedAt                DateTime    @updatedAt
+  issueId                  String
+  repositoryId             String
+  organizationId           String
+  paymentId                String?
+  invoiceId                String?
+  invoiceHostedUrl         String?
+  email                    String?
+  amount                   BigInt
+  currency                 String
+  fee                      BigInt
+  amountReceived           BigInt?
+  state                    PledgeState
+  type                     PledgeType
+  scheduledPayoutAt        DateTime?
+  disputeReason            String?
+  disputedByUserId         String?
+  disputedAt               DateTime?
+  refundedAt               DateTime?
+  byUserId                 String?
+  byOrganizationId         String?
+  onBehalfOfOrganizationId String?
+  createdByUserId          String?
+
+  issue                  Issue               @relation(fields: [issueId], references: [id])
+  repository             Repository          @relation(fields: [repositoryId], references: [id])
+  organization           Organization        @relation(fields: [organizationId], references: [id])
+  disputedByUser         User?               @relation("DisputedPledges", fields: [disputedByUserId], references: [id])
+  byUser                 User?               @relation("UserPledges", fields: [byUserId], references: [id])
+  byOrganization         Organization?       @relation("OrganizationPledges", fields: [byOrganizationId], references: [id])
+  onBehalfOfOrganization Organization?       @relation("OnBehalfOfPledges", fields: [onBehalfOfOrganizationId], references: [id])
+  createdByUser          User?               @relation("CreatedPledges", fields: [createdByUserId], references: [id])
+  transactions           Transaction[]
+  notifications          Notification[]
+  PledgeTransaction      PledgeTransaction[]
+  User                   User?               @relation(fields: [userId], references: [id])
+  userId                 String?
+
+  @@index([issueId, state])
+}
+
+model PledgeTransaction {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  pledgeId      String
+  type          String
+  amount        BigInt
+  transactionId String?
+  issueRewardId String?
+
+  pledge      Pledge       @relation(fields: [pledgeId], references: [id])
+  issueReward IssueReward? @relation(fields: [issueRewardId], references: [id])
+}
+
+model Product {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  description     String?
+  isArchived      Boolean  @default(false)
+  stripeProductId String?
+  organizationId  String
+
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  prices              ProductPrice[]
+  productBenefits     ProductBenefit[]
+  productMedias       ProductMedia[]
+  productCustomFields ProductCustomField[]
+  checkouts           Checkout[]
+  discountProducts    DiscountProduct[]
+  orders              Order[]
+  subscriptions       Subscription[]
+}
+
+model ProductBenefit {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  productId String
+  benefitId String
+  order     Int
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  benefit Benefit @relation(fields: [benefitId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, order])
+}
+
+model ProductCustomField {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  productId String
+  order     Int
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, order])
+}
+
+model ProductMedia {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  productId String
+  fileId    String
+  order     Int
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  file    File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, order])
+}
+
+enum SubscriptionRecurringInterval {
+  day
+  week
+  month
+  year
+}
+
+model ProductPrice {
+  id                String                         @id @default(uuid())
+  createdAt         DateTime                       @default(now())
+  updatedAt         DateTime                       @updatedAt
+  type              ProductPriceType
+  recurringInterval SubscriptionRecurringInterval?
+  amountType        ProductPriceAmountType
+  isArchived        Boolean                        @default(false)
+  stripePriceId     String
+  productId         String
+  priceCurrency     String?
+  priceAmount       Int?
+  minimumAmount     Int?
+  maximumAmount     Int?
+  presetAmount      Int?
+
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+  Checkout      Checkout[]
+  Order         Order[]
+}
+
+enum Platforms {
+  github
+  gitlab
+}
+
+model Repository {
+  id                       String    @id @default(uuid())
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
+  platform                 Platforms
+  externalId               Int       @unique
+  organizationId           String
+  name                     String
+  description              String?
+  openIssues               Int?
+  forks                    Int?
+  stars                    Int?
+  watchers                 Int?
+  mainBranch               String?
+  topics                   Json?
+  license                  String?
+  homepage                 String?
+  repositoryPushedAt       DateTime?
+  repositoryCreatedAt      DateTime?
+  repositoryModifiedAt     DateTime?
+  issuesReferencesSyncedAt DateTime?
+  profileSettings          Json      @default("{}")
+  pledgeBadgeAutoEmbed     Boolean   @default(false)
+  pledgeBadgeLabel         String
+  isPrivate                Boolean
+  isFork                   Boolean?
+  isIssuesEnabled          Boolean?
+  isProjectsEnabled        Boolean?
+  isWikiEnabled            Boolean?
+  isPagesEnabled           Boolean?
+  isDownloadsEnabled       Boolean?
+  isArchived               Boolean?
+  isDisabled               Boolean?
+
+  organization ExternalOrganization @relation(fields: [organizationId], references: [id])
+  Issue        Issue[]
+  Organization Organization         @relation(fields: [organizationId], references: [id])
+  pledges      Pledge[]
+
+  @@unique([organizationId, name])
+}
+
+model ExternalOrganization {
+  id                      String        @id @default(uuid())
+  organizationId          String?       @db.Uuid
+  organization            Organization? @relation(fields: [organizationId], references: [id])
+  platform                Platforms
+  name                    String        @unique
+  externalId              BigInt        @unique
+  avatarUrl               String
+  isPersonal              Boolean
+  installationId          Int?          @unique
+  installationCreatedAt   DateTime?
+  installationUpdatedAt   DateTime?
+  installationSuspendedAt DateTime?
+  installationSuspendedBy Int?
+  installationSuspender   String?       @db.Uuid
+  installationPermissions Json?
+  bio                     String?
+  prettyName              String?
+  company                 String?
+  blog                    String?
+  location                String?
+  email                   String?
+  twitterUsername         String?
+  Repository              Repository[]
+
+  @@unique([externalId])
+  @@unique([installationId])
+  @@index([name, platform], name: "external_organization_name_platform_unique")
+}
+
+model Subscription {
+  id                   String                        @id @default(uuid())
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  amount               Int?
+  currency             String?
+  recurringInterval    SubscriptionRecurringInterval
+  stripeSubscriptionId String?
+  status               SubscriptionStatus
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean
+  startedAt            DateTime?
+  endedAt              DateTime?
+  userId               String
+  productId            String
+  priceId              String
+  discountId           String?
+  checkoutId           String?
+  customFields         Json?
+  metadata             Json?
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  price    ProductPrice   @relation(fields: [priceId], references: [id], onDelete: Cascade)
+  discount Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
+  checkout Checkout?      @relation(fields: [checkoutId], references: [id], onDelete: SetNull)
+  grants   BenefitGrant[]
+  Order    Order[]
+}
+
+enum ProcessorFeeType {
+  payment
+  refund
+  dispute
+  tax
+  subscription
+  invoice
+  cross_border_transfer
+  payout
+  account
+  security
+}
+
+enum PlatformFeeType {
+  payment
+  international_payment
+  subscription
+  invoice
+  cross_border_transfer
+  payout
+  account
+  platform
+}
+
+model Transaction {
+  id                           String            @id @default(uuid())
+  createdAt                    DateTime          @default(now())
+  updatedAt                    DateTime          @updatedAt
+  type                         TransactionType
+  processor                    PaymentProcessor?
+  currency                     String
+  amount                       Int
+  accountCurrency              String
+  accountAmount                Int
+  taxAmount                    Int
+  taxCountry                   String?
+  taxState                     String?
+  processorFeeType             ProcessorFeeType?
+  balanceCorrelationKey        String?
+  platformFeeType              PlatformFeeType?
+  customerId                   String?
+  chargeId                     String?
+  refundId                     String?
+  disputeId                    String?
+  transferId                   String?
+  transferReversalId           String?
+  payoutId                     String?
+  feeBalanceTransactionId      String?
+  riskLevel                    String?
+  riskScore                    Int?
+  accountId                    String?
+  paymentUserId                String?
+  paymentOrganizationId        String?
+  pledgeId                     String?
+  orderId                      String?
+  issueRewardId                String?
+  paymentTransactionId         String?
+  balanceReversalTransactionId String?
+  payoutTransactionId          String?
+  incurredByTransactionId      String?
+
+  account                     Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  paymentUser                 User?         @relation("PaymentUser", fields: [paymentUserId], references: [id], onDelete: SetNull)
+  paymentOrganization         Organization? @relation(fields: [paymentOrganizationId], references: [id], onDelete: SetNull)
+  pledge                      Pledge?       @relation(fields: [pledgeId], references: [id], onDelete: SetNull)
+  order                       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  issueReward                 IssueReward?  @relation(fields: [issueRewardId], references: [id], onDelete: SetNull)
+  paymentTransaction          Transaction?  @relation("BalanceTransactions", fields: [paymentTransactionId], references: [id], onDelete: SetNull)
+  balanceTransactions         Transaction[] @relation("BalanceTransactions")
+  balanceReversalTransaction  Transaction?  @relation("BalanceReversalTransactions", fields: [balanceReversalTransactionId], references: [id], onDelete: SetNull)
+  balanceReversalTransactions Transaction[] @relation("BalanceReversalTransactions")
+  payoutTransaction           Transaction?  @relation("PaidTransactions", fields: [payoutTransactionId], references: [id], onDelete: SetNull)
+  paidTransactions            Transaction[] @relation("PaidTransactions")
+  incurredByTransaction       Transaction?  @relation("IncurredTransactions", fields: [incurredByTransactionId], references: [id], onDelete: SetNull)
+  incurredTransactions        Transaction[] @relation("IncurredTransactions")
+  Account                     Account?      @relation(fields: [accountId], references: [id])
+  Account                     Account?      @relation(fields: [accountId], references: [id])
+}
+
+model User {
+  id                     String    @id @default(uuid())
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  email                  String    @unique
+  emailVerified          Boolean   @default(false)
+  avatarUrl              String?
+  accountId              String?
+  acceptedTermsOfService Boolean   @default(false)
+  stripeCustomerId       String?   @unique
+  blockedAt              DateTime?
+  meta                   Json      @default("{}")
+
+  account             Account?              @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  oauthAccounts       OAuthAccount[]
+  transactions        Transaction[]         @relation("PaymentUser")
+  BenefitGrant        BenefitGrant[]
+  Checkout            Checkout[]
+  IssueReward         IssueReward[]
+  LicenseKey          LicenseKey[]
+  MagicLink           MagicLink[]
+  Order               Order[]
+  PersonalAccessToken PersonalAccessToken[]
+  pledges             Pledge[]
+  Subscription        Subscription[]
+  UserNotification    UserNotification[]
+  UserOrganization    UserOrganization[]
+  UserSession         UserSession[]
+  WebhookEndpoint     WebhookEndpoint[]
+  Account             Account?              @relation(fields: [accountId], references: [id])
+  Account             Account[]
+  Account             Account?              @relation(fields: [accountId], references: [id])
+  Pledge              Pledge[]
+  Pledge              Pledge[]
+  Pledge              Pledge[]
+}
+
+model UserNotification {
+  userId                 String  @id
+  lastReadNotificationId String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model UserOrganization {
+  userId         String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@id([userId, organizationId])
+}
+
+model UserSession {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  token     String   @unique
+  expiresAt DateTime
+  userAgent String
+  userId    String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WebhookDelivery {
+  id                String   @id @default(uuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  webhookEndpointId String
+  webhookEventId    String
+  httpCode          Int?
+  succeeded         Boolean
+
+  webhookEvent WebhookEvent @relation(fields: [webhookEventId], references: [id], onDelete: Cascade)
+
+  @@index([webhookEndpointId])
+  @@index([webhookEventId])
+}
+
+model WebhookEndpoint {
+  id             String             @id @default(uuid())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  url            String
+  format         WebhookFormat
+  secret         String
+  organizationId String?
+  userId         String?
+  events         WebhookEventType[]
+
+  organization Organization?  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  WebhookEvent WebhookEvent[]
+
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model WebhookEvent {
+  id                String   @id @default(uuid())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  webhookEndpointId String
+  lastHttpCode      Int?
+  succeeded         Boolean?
+  payload           String
+
+  webhookEndpoint   WebhookEndpoint   @relation(fields: [webhookEndpointId], references: [id], onDelete: Cascade)
+  webhookDeliveries WebhookDelivery[]
+
+  @@index([webhookEndpointId])
+}
