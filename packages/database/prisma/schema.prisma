@@ -167,13 +167,9 @@ model Account {
   nextReviewThreshold     Int?
   data                    Json          @default("{}")
 
-  admin         User           @relation("AccountAdmin", fields: [adminId], references: [id])
-  organizations Organization[] @relation("AccountOrganizations")
-  users         User[]         @relation("AccountUsers")
-  transactions  Transaction[]  @relation("AccountTransactions")
-  Organization  Organization[]
+  admin         User           @relation(fields: [adminId], references: [id])
+  organizations Organization[]
   Transaction   Transaction[]
-  User          User[]
 }
 
 model Benefit {
@@ -242,13 +238,12 @@ model Checkout {
   customerIpAddress        String?
   customerBillingAddress   Json?
   customerTaxId            Json?
-  subscriptionId           String?
 
   product            Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
   productPrice       ProductPrice         @relation(fields: [productPriceId], references: [id], onDelete: Cascade)
   discount           Discount?            @relation(fields: [discountId], references: [id], onDelete: SetNull)
   customer           User?                @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  subscription       Subscription?        @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  subscription       Subscription?
   order              Order?
   DiscountRedemption DiscountRedemption[]
 }
@@ -339,81 +334,6 @@ model File {
   ProductMedia ProductMedia[]
 }
 
-model Issue {
-  id                              String     @id @default(uuid())
-  createdAt                       DateTime   @default(now())
-  updatedAt                       DateTime   @updatedAt
-  platform                        String
-  externalId                      BigInt     @unique
-  organizationId                  String
-  repositoryId                    String
-  number                          Int
-  title                           String
-  body                            String?
-  comments                        Int?
-  author                          Json?
-  authorAssociation               String?
-  labels                          Json?
-  assignee                        Json?
-  assignees                       Json?
-  milestone                       Json?
-  closedBy                        Json?
-  reactions                       Json?
-  state                           IssueState
-  stateReason                     String?
-  issueClosedAt                   DateTime?
-  issueCreatedAt                  DateTime
-  issueModifiedAt                 DateTime?
-  externalLookupKey               String?    @unique
-  pledgeBadgeEmbeddedAt           DateTime?
-  pledgeBadgeEverEmbedded         Boolean    @default(false)
-  hasPledgeBadgeLabel             Boolean    @default(false)
-  badgeCustomContent              String?
-  githubIssueEtag                 String?
-  githubIssueFetchedAt            DateTime?
-  fundingGoal                     BigInt?
-  pledgedAmountSum                BigInt     @default(0)
-  lastPledgedAt                   DateTime?
-  issueHasInProgressRelationship  Boolean    @default(false)
-  issueHasPullRequestRelationship Boolean    @default(false)
-  positiveReactionsCount          Int        @default(0)
-  totalEngagementCount            Int        @default(0)
-  needsConfirmationSolved         Boolean    @default(false)
-  confirmedSolvedAt               DateTime?
-  confirmedSolvedBy               String?
-  upfrontSplitToContributors      Int?
-
-  organization Organization   @relation(fields: [organizationId], references: [id])
-  repository   Repository     @relation(fields: [repositoryId], references: [id])
-  pledges      Pledge[]
-  issueRewards IssueReward[]
-  Notification Notification[]
-
-  @@unique([organizationId, repositoryId, number])
-  @@index([title])
-}
-
-model IssueReward {
-  id             String   @id @default(uuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  issueId        String
-  shareThousands BigInt
-  githubUsername String?
-  organizationId String?
-  userId         String?
-
-  issue             Issue               @relation(fields: [issueId], references: [id])
-  organization      Organization?       @relation(fields: [organizationId], references: [id])
-  user              User?               @relation(fields: [userId], references: [id])
-  PledgeTransaction PledgeTransaction[]
-  Transaction       Transaction[]
-
-  @@unique([issueId, githubUsername])
-  @@unique([issueId, organizationId])
-  @@unique([issueId, userId])
-}
-
 model LicenseKey {
   id               String           @id @default(uuid())
   createdAt        DateTime         @default(now())
@@ -448,54 +368,13 @@ model LicenseKeyActivation {
   licenseKey LicenseKey @relation(fields: [licenseKeyId], references: [id], onDelete: Cascade)
 }
 
-model MagicLink {
-  id                String   @id @default(uuid())
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  tokenHash         String
-  expiresAt         DateTime
-  userEmail         String
-  userId            String?
-  source            String?
-  signupAttribution Json
-
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([tokenHash])
-}
-
 model Notification {
   id             String  @id @default(uuid())
   userId         String?
   emailAddr      String?
   organizationId String?
   type           String
-  issueId        String?
-  pledgeId       String?
   payload        Json?
-
-  issue  Issue?  @relation(fields: [issueId], references: [id])
-  pledge Pledge? @relation(fields: [pledgeId], references: [id])
-}
-
-model OAuthAccount {
-  id                    String        @id @default(uuid())
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  platform              OAuthPlatform
-  accessToken           String
-  expiresAt             Int?
-  refreshToken          String?
-  refreshTokenExpiresAt Int?
-  accountId             String
-  accountEmail          String
-  accountUsername       String?
-  userId                String
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([platform, accountId])
-  @@index([userId, platform])
 }
 
 model Order {
@@ -513,7 +392,7 @@ model Order {
   productPriceId  String
   discountId      String?
   subscriptionId  String?
-  checkoutId      String?
+  checkoutId      String?  @unique
 
   user          User           @relation(fields: [userId], references: [id])
   product       Product        @relation(fields: [productId], references: [id])
@@ -554,98 +433,16 @@ model Organization {
   email                             String?
   twitterUsername                   String?
 
-  account              Account?               @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  benefits             Benefit[]
-  customFields         CustomField[]
-  discounts            Discount[]
-  files                File[]
-  issues               Issue[]
-  issueRewards         IssueReward[]
-  licenseKeys          LicenseKey[]
-  products             Product[]
-  repositories         Repository[]
-  userOrganizations    UserOrganization[]
-  ExternalOrganization ExternalOrganization[]
-  Transaction          Transaction[]
-  WebhookEndpoint      WebhookEndpoint[]
-  Account              Account?               @relation(fields: [accountId], references: [id])
-  pledges              Pledge[]
-  Pledge               Pledge[]
-  Pledge               Pledge[]
-}
-
-model PersonalAccessToken {
-  id         String    @id @default(uuid())
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  token      String    @unique
-  scope      String
-  expiresAt  DateTime?
-  comment    String
-  lastUsedAt DateTime?
-  userId     String
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([expiresAt])
-}
-
-model Pledge {
-  id                       String      @id @default(uuid())
-  createdAt                DateTime    @default(now())
-  updatedAt                DateTime    @updatedAt
-  issueId                  String
-  repositoryId             String
-  organizationId           String
-  paymentId                String?
-  invoiceId                String?
-  invoiceHostedUrl         String?
-  email                    String?
-  amount                   BigInt
-  currency                 String
-  fee                      BigInt
-  amountReceived           BigInt?
-  state                    PledgeState
-  type                     PledgeType
-  scheduledPayoutAt        DateTime?
-  disputeReason            String?
-  disputedByUserId         String?
-  disputedAt               DateTime?
-  refundedAt               DateTime?
-  byUserId                 String?
-  byOrganizationId         String?
-  onBehalfOfOrganizationId String?
-  createdByUserId          String?
-
-  issue                  Issue               @relation(fields: [issueId], references: [id])
-  repository             Repository          @relation(fields: [repositoryId], references: [id])
-  organization           Organization        @relation(fields: [organizationId], references: [id])
-  disputedByUser         User?               @relation("DisputedPledges", fields: [disputedByUserId], references: [id])
-  byUser                 User?               @relation("UserPledges", fields: [byUserId], references: [id])
-  byOrganization         Organization?       @relation("OrganizationPledges", fields: [byOrganizationId], references: [id])
-  onBehalfOfOrganization Organization?       @relation("OnBehalfOfPledges", fields: [onBehalfOfOrganizationId], references: [id])
-  createdByUser          User?               @relation("CreatedPledges", fields: [createdByUserId], references: [id])
-  transactions           Transaction[]
-  notifications          Notification[]
-  PledgeTransaction      PledgeTransaction[]
-  User                   User?               @relation(fields: [userId], references: [id])
-  userId                 String?
-
-  @@index([issueId, state])
-}
-
-model PledgeTransaction {
-  id            String   @id @default(uuid())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  pledgeId      String
-  type          String
-  amount        BigInt
-  transactionId String?
-  issueRewardId String?
-
-  pledge      Pledge       @relation(fields: [pledgeId], references: [id])
-  issueReward IssueReward? @relation(fields: [issueRewardId], references: [id])
+  account           Account?           @relation(fields: [accountId], references: [id], onDelete: SetNull)
+  benefits          Benefit[]
+  customFields      CustomField[]
+  discounts         Discount[]
+  files             File[]
+  licenseKeys       LicenseKey[]
+  products          Product[]
+  userOrganizations UserOrganization[]
+  Transaction       Transaction[]
+  WebhookEndpoint   WebhookEndpoint[]
 }
 
 model Product {
@@ -738,83 +535,6 @@ model ProductPrice {
   Order         Order[]
 }
 
-enum Platforms {
-  github
-  gitlab
-}
-
-model Repository {
-  id                       String    @id @default(uuid())
-  createdAt                DateTime  @default(now())
-  updatedAt                DateTime  @updatedAt
-  platform                 Platforms
-  externalId               Int       @unique
-  organizationId           String
-  name                     String
-  description              String?
-  openIssues               Int?
-  forks                    Int?
-  stars                    Int?
-  watchers                 Int?
-  mainBranch               String?
-  topics                   Json?
-  license                  String?
-  homepage                 String?
-  repositoryPushedAt       DateTime?
-  repositoryCreatedAt      DateTime?
-  repositoryModifiedAt     DateTime?
-  issuesReferencesSyncedAt DateTime?
-  profileSettings          Json      @default("{}")
-  pledgeBadgeAutoEmbed     Boolean   @default(false)
-  pledgeBadgeLabel         String
-  isPrivate                Boolean
-  isFork                   Boolean?
-  isIssuesEnabled          Boolean?
-  isProjectsEnabled        Boolean?
-  isWikiEnabled            Boolean?
-  isPagesEnabled           Boolean?
-  isDownloadsEnabled       Boolean?
-  isArchived               Boolean?
-  isDisabled               Boolean?
-
-  organization ExternalOrganization @relation(fields: [organizationId], references: [id])
-  Issue        Issue[]
-  Organization Organization         @relation(fields: [organizationId], references: [id])
-  pledges      Pledge[]
-
-  @@unique([organizationId, name])
-}
-
-model ExternalOrganization {
-  id                      String        @id @default(uuid())
-  organizationId          String?       @db.Uuid
-  organization            Organization? @relation(fields: [organizationId], references: [id])
-  platform                Platforms
-  name                    String        @unique
-  externalId              BigInt        @unique
-  avatarUrl               String
-  isPersonal              Boolean
-  installationId          Int?          @unique
-  installationCreatedAt   DateTime?
-  installationUpdatedAt   DateTime?
-  installationSuspendedAt DateTime?
-  installationSuspendedBy Int?
-  installationSuspender   String?       @db.Uuid
-  installationPermissions Json?
-  bio                     String?
-  prettyName              String?
-  company                 String?
-  blog                    String?
-  location                String?
-  email                   String?
-  twitterUsername         String?
-  Repository              Repository[]
-
-  @@unique([externalId])
-  @@unique([installationId])
-  @@index([name, platform], name: "external_organization_name_platform_unique")
-}
-
 model Subscription {
   id                   String                        @id @default(uuid())
   createdAt            DateTime                      @default(now())
@@ -833,7 +553,7 @@ model Subscription {
   productId            String
   priceId              String
   discountId           String?
-  checkoutId           String?
+  checkoutId           String?                       @unique // Nullable, as some subscriptions may not originate from a checkout
   customFields         Json?
   metadata             Json?
 
@@ -843,7 +563,7 @@ model Subscription {
   discount Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
   checkout Checkout?      @relation(fields: [checkoutId], references: [id], onDelete: SetNull)
   grants   BenefitGrant[]
-  Order    Order[]
+  orders   Order[]
 }
 
 enum ProcessorFeeType {
@@ -910,9 +630,7 @@ model Transaction {
   account                     Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
   paymentUser                 User?         @relation("PaymentUser", fields: [paymentUserId], references: [id], onDelete: SetNull)
   paymentOrganization         Organization? @relation(fields: [paymentOrganizationId], references: [id], onDelete: SetNull)
-  pledge                      Pledge?       @relation(fields: [pledgeId], references: [id], onDelete: SetNull)
   order                       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  issueReward                 IssueReward?  @relation(fields: [issueRewardId], references: [id], onDelete: SetNull)
   paymentTransaction          Transaction?  @relation("BalanceTransactions", fields: [paymentTransactionId], references: [id], onDelete: SetNull)
   balanceTransactions         Transaction[] @relation("BalanceTransactions")
   balanceReversalTransaction  Transaction?  @relation("BalanceReversalTransactions", fields: [balanceReversalTransactionId], references: [id], onDelete: SetNull)
@@ -921,8 +639,6 @@ model Transaction {
   paidTransactions            Transaction[] @relation("PaidTransactions")
   incurredByTransaction       Transaction?  @relation("IncurredTransactions", fields: [incurredByTransactionId], references: [id], onDelete: SetNull)
   incurredTransactions        Transaction[] @relation("IncurredTransactions")
-  Account                     Account?      @relation(fields: [accountId], references: [id])
-  Account                     Account?      @relation(fields: [accountId], references: [id])
 }
 
 model User {
@@ -938,28 +654,16 @@ model User {
   blockedAt              DateTime?
   meta                   Json      @default("{}")
 
-  account             Account?              @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  oauthAccounts       OAuthAccount[]
-  transactions        Transaction[]         @relation("PaymentUser")
-  BenefitGrant        BenefitGrant[]
-  Checkout            Checkout[]
-  IssueReward         IssueReward[]
-  LicenseKey          LicenseKey[]
-  MagicLink           MagicLink[]
-  Order               Order[]
-  PersonalAccessToken PersonalAccessToken[]
-  pledges             Pledge[]
-  Subscription        Subscription[]
-  UserNotification    UserNotification[]
-  UserOrganization    UserOrganization[]
-  UserSession         UserSession[]
-  WebhookEndpoint     WebhookEndpoint[]
-  Account             Account?              @relation(fields: [accountId], references: [id])
-  Account             Account[]
-  Account             Account?              @relation(fields: [accountId], references: [id])
-  Pledge              Pledge[]
-  Pledge              Pledge[]
-  Pledge              Pledge[]
+  transactions     Transaction[]      @relation("PaymentUser")
+  BenefitGrant     BenefitGrant[]
+  Checkout         Checkout[]
+  LicenseKey       LicenseKey[]
+  Order            Order[]
+  Subscription     Subscription[]
+  UserNotification UserNotification[]
+  UserOrganization UserOrganization[]
+  WebhookEndpoint  WebhookEndpoint[]
+  accounts         Account[]
 }
 
 model UserNotification {
@@ -979,18 +683,6 @@ model UserOrganization {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@id([userId, organizationId])
-}
-
-model UserSession {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  token     String   @unique
-  expiresAt DateTime
-  userAgent String
-  userId    String
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WebhookDelivery {

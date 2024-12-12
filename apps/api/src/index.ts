@@ -1,3 +1,6 @@
-import app from "@repo/hono";
+import { app } from "@repo/hono";
 
-export default app;
+export default {
+  port: 8787,
+  fetch: app.fetch,
+};

@@ -69,6 +69,9 @@ importers:
       '@repo/feature-flags':
         specifier: workspace:*
         version: link:../../packages/feature-flags
+      '@repo/hono':
+        specifier: workspace:*
+        version: link:../../packages/hono
       '@repo/next-config':
         specifier: workspace:*
         version: link:../../packages/next-config
@@ -391,6 +394,25 @@ importers:
         specifier: ^19.0.1
         version: 19.0.1
 
+  packages/constants:
+    dependencies:
+      '@repo/analytics':
+        specifier: workspace:*
+        version: link:../analytics
+      '@repo/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@repo/design-system':
+        specifier: workspace:*
+        version: link:../design-system
+    devDependencies:
+      '@repo/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+
   packages/database:
     dependencies:
       '@neondatabase/serverless':
@@ -710,6 +732,9 @@ importers:
       '@repo/database':
         specifier: workspace:*
         version: link:../database
+      chalk:
+        specifier: ^5.3.0
+        version: 5.3.0
       hono-rate-limiter:
         specifier: ^0.4.2
         version: 0.4.2(hono@4.6.13)

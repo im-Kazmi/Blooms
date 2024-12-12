@@ -1,5 +1,4 @@
 import { auth } from "@repo/auth/server";
-import { prisma } from "@repo/database";
 import { env } from "@repo/env";
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
@@ -7,9 +6,12 @@ import { notFound } from "next/navigation";
 import { AvatarStack } from "./components/avatar-stack";
 import { Cursors } from "./components/cursors";
 import { Header } from "./components/header";
+import { type AppType } from "@repo/hono";
+import { hc } from "@repo/hono";
+import { prisma } from "@repo/database";
+import { APP_NAME, APP_DESCRIPTION } from "@repo/config";
 
-const title = "Blooms";
-const description = "Opensource Merchant of record.";
+const { api } = hc<AppType>("http://localhost:8787");
 
 const CollaborationProvider = dynamic(() =>
   import("./components/collaboration-provider").then(
@@ -18,12 +20,11 @@ const CollaborationProvider = dynamic(() =>
 );
 
 export const metadata: Metadata = {
-  title,
-  description,
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
 };
 
 const App = async () => {
-  // const pages = await prisma.page.findMany();
   const { orgId } = await auth();
 
   if (!orgId) {
@@ -42,7 +43,6 @@ const App = async () => {
       </Header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
         <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-          hey there
           {/* {pages &&
             pages.map((page) => (
               <div
