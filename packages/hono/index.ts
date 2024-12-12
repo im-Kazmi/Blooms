@@ -11,9 +11,8 @@ const app = new Hono()
   .use(corsMiddleware)
   .use(customLogger)
   .use(prettyJSON());
-// .use(clerkMiddleware());
 
-const routes = app.route("/webhooks", webhooks).route("/test", test);
+const routes = app.route("/test", test);
 
 export type AppType = typeof routes;
 

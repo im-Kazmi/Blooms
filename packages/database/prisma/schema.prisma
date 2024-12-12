@@ -167,7 +167,7 @@ model Account {
   nextReviewThreshold     Int?
   data                    Json          @default("{}")
 
-  admin         User           @relation(fields: [adminId], references: [id])
+  admin         User           @relation(fields: [adminId], references: [clerkId])
   organizations Organization[]
   Transaction   Transaction[]
 }
@@ -202,7 +202,7 @@ model BenefitGrant {
   subscriptionId String?
   orderId        String?
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
   benefit      Benefit       @relation(fields: [benefitId], references: [id], onDelete: Cascade)
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   order        Order?        @relation(fields: [orderId], references: [id], onDelete: Cascade)
@@ -242,7 +242,7 @@ model Checkout {
   product            Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
   productPrice       ProductPrice         @relation(fields: [productPriceId], references: [id], onDelete: Cascade)
   discount           Discount?            @relation(fields: [discountId], references: [id], onDelete: SetNull)
-  customer           User?                @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customer           User?                @relation(fields: [customerId], references: [clerkId], onDelete: Cascade)
   subscription       Subscription?
   order              Order?
   DiscountRedemption DiscountRedemption[]
@@ -351,7 +351,7 @@ model LicenseKey {
   expiresAt        DateTime?
 
   organization Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                   @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
   benefit      Benefit                @relation(fields: [benefitId], references: [id], onDelete: Cascade)
   activations  LicenseKeyActivation[]
 }
@@ -394,7 +394,7 @@ model Order {
   subscriptionId  String?
   checkoutId      String?  @unique
 
-  user          User           @relation(fields: [userId], references: [id])
+  user          User           @relation(fields: [userId], references: [clerkId])
   product       Product        @relation(fields: [productId], references: [id])
   productPrice  ProductPrice   @relation(fields: [productPriceId], references: [id])
   discount      Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
@@ -405,33 +405,25 @@ model Order {
 }
 
 model Organization {
-  id                                String    @id @default(uuid())
-  createdAt                         DateTime  @default(now())
-  updatedAt                         DateTime  @updatedAt
-  name                              String
-  slug                              String    @unique
-  avatarUrl                         String?
-  accountId                         String?
-  pledgeBadgeShowAmount             Boolean   @default(true)
-  pledgeMinimumAmount               Int
-  defaultBadgeCustomContent         String?
-  defaultUpfrontSplitToContributors Int?
-  onboardedAt                       DateTime?
-  blockedAt                         DateTime?
-  createdFromUserMaintainerUpgrade  Boolean   @default(false)
-  isTeamsEnabled                    Boolean   @default(false)
-  stripeCustomerId                  String?   @unique
-  billingEmail                      String?
-  totalMonthlySpendingLimit         Int?
-  perUserMonthlySpendingLimit       Int?
-  profileSettings                   Json
-  featureSettings                   Json
-  bio                               String?
-  company                           String?
-  blog                              String?
-  location                          String?
-  email                             String?
-  twitterUsername                   String?
+  id                          String    @id @default(uuid())
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+  name                        String
+  slug                        String    @unique
+  avatarUrl                   String?
+  createdBy                   String?
+  membersCount                Int?
+  accountId                   String?
+  onboardedAt                 DateTime?
+  blockedAt                   DateTime?
+  isTeamsEnabled              Boolean   @default(false)
+  stripeCustomerId            String?   @unique
+  billingEmail                String?
+  totalMonthlySpendingLimit   Int?
+  perUserMonthlySpendingLimit Int?
+  metadata                    Json      @default("{}")
+  profileSettings             Json      @default("{}")
+  featureSettings             Json      @default("{}")
 
   account           Account?           @relation(fields: [accountId], references: [id], onDelete: SetNull)
   benefits          Benefit[]
@@ -557,7 +549,7 @@ model Subscription {
   customFields         Json?
   metadata             Json?
 
-  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User           @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
   product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   price    ProductPrice   @relation(fields: [priceId], references: [id], onDelete: Cascade)
   discount Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
@@ -628,7 +620,7 @@ model Transaction {
   incurredByTransactionId      String?
 
   account                     Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  paymentUser                 User?         @relation("PaymentUser", fields: [paymentUserId], references: [id], onDelete: SetNull)
+  paymentUser                 User?         @relation("PaymentUser", fields: [paymentUserId], references: [clerkId], onDelete: SetNull)
   paymentOrganization         Organization? @relation(fields: [paymentOrganizationId], references: [id], onDelete: SetNull)
   order                       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
   paymentTransaction          Transaction?  @relation("BalanceTransactions", fields: [paymentTransactionId], references: [id], onDelete: SetNull)
@@ -642,7 +634,8 @@ model Transaction {
 }
 
 model User {
-  id                     String    @id @default(uuid())
+  clerkId                String    @id
+  name                   String
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   email                  String    @unique
@@ -670,7 +663,7 @@ model UserNotification {
   userId                 String  @id
   lastReadNotificationId String?
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [clerkId])
 }
 
 model UserOrganization {
@@ -679,7 +672,7 @@ model UserOrganization {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user         User         @relation(fields: [userId], references: [id])
+  user         User         @relation(fields: [userId], references: [clerkId])
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   @@id([userId, organizationId])
@@ -712,7 +705,7 @@ model WebhookEndpoint {
   events         WebhookEventType[]
 
   organization Organization?  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  user         User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User?          @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
   WebhookEvent WebhookEvent[]
 
   @@index([organizationId])
