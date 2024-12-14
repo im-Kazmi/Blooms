@@ -2,10 +2,6 @@ import { prisma, Organization, Prisma } from "@repo/database";
 import { BaseService } from "./base-service";
 
 export class OrgService extends BaseService {
-  /**
-   * Create a new organization
-   * @param values - Organization data to create
-   */
   async createOrg(values: Prisma.OrganizationCreateInput) {
     try {
       const newOrg = await prisma.organization.create({
@@ -19,12 +15,14 @@ export class OrgService extends BaseService {
     }
   }
 
-  /**
-   * Delete an organization by ID
-   * @param orgId - ID of the organization to delete
-   */
   async deleteOrg(orgId: string) {
     try {
+      const exists = await this.getOrgById(orgId);
+
+      if (!exists) {
+        throw new Error(`org does not exists with this id.`);
+      }
+
       await prisma.organization.delete({
         where: { id: orgId },
       });
@@ -36,13 +34,14 @@ export class OrgService extends BaseService {
     }
   }
 
-  /**
-   * Update an organization by ID
-   * @param orgId - ID of the organization to update
-   * @param values - Partial organization data to update
-   */
   async updateOrg(orgId: string, values: Prisma.OrganizationUpdateInput) {
     try {
+      const exists = await this.getOrgById(orgId);
+
+      if (!exists) {
+        throw new Error(`org does not exists with this id.`);
+      }
+
       const updatedOrg = await prisma.organization.update({
         where: { id: orgId },
         data: values,
@@ -55,10 +54,6 @@ export class OrgService extends BaseService {
     }
   }
 
-  /**
-   * Get an organization by ID
-   * @param orgId - ID of the organization to retrieve
-   */
   async getOrgById(orgId: string) {
     try {
       const organization = await prisma.organization.findUnique({
@@ -75,10 +70,6 @@ export class OrgService extends BaseService {
     }
   }
 
-  /**
-   * Get all organizations with optional filters
-   * @param filters - Optional filters for querying organizations
-   */
   async getAllOrgs(filters?: Prisma.OrganizationWhereInput) {
     try {
       const organizations = await prisma.organization.findMany({

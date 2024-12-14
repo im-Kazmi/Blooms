@@ -2,7 +2,6 @@
   "name": "@repo/hono",
   "version": "0.0.0",
   "private": true,
-  "exports": {},
   "types": "./index.ts",
   "main": "./index.ts",
   "scripts": {
@@ -15,6 +14,7 @@
     "@clerk/backend": "^1.21.0",
     "@hono/clerk-auth": "^2.0.0",
     "@repo/database": "workspace:*",
+    "@repo/payment": "workspace:*",
     "@repo/auth": "workspace:*",
     "chalk": "^5.3.0",
     "hono-rate-limiter": "^0.4.2",

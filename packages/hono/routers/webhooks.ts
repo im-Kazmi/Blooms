@@ -28,22 +28,17 @@ const app = new Hono<{ Bindings: Bindings }>()
   .use(orgService.middleware("orgService"))
   .use(userService.middleware("userService"))
   .post("/clerk", async (c) => {
-    if (!c.env.CLERK_WEBHOOK_SECRET) {
-      return c.json({ message: "Not configured" }, 400);
-    }
-
-    const headerPayload = c.req.header();
-    const svixId = headerPayload["svix-id"];
-    const svixTimestamp = headerPayload["svix-timestamp"];
-    const svixSignature = headerPayload["svix-signature"];
+    const svixId = c.req.header("svix-id");
+    const svixTimestamp = c.req.header("svix-timestamp");
+    const svixSignature = c.req.header("svix-signature");
 
     if (!svixId || !svixTimestamp || !svixSignature) {
       return c.json("Error occured -- no svix headers", 400);
     }
 
-    const body = await c.req.json();
+    const body = await c.req.text();
 
-    const webhook = new Webhook(env.CLERK_WEBHOOK_SECRET);
+    const webhook = new Webhook("");
 
     let event: WebhookEvent | undefined;
 
@@ -92,7 +87,9 @@ const app = new Hono<{ Bindings: Bindings }>()
       }
       case "user.deleted": {
         const { id } = event.data;
-        response = userService.deleteUser(id);
+        if (id) {
+          response = userService.deleteUser(id);
+        }
         break;
       }
       case "organization.created": {
@@ -140,14 +137,19 @@ const app = new Hono<{ Bindings: Bindings }>()
         break;
       }
       case "organizationMembership.created": {
-        const { organization, permissions, role } = event.data;
+        const { organization, permissions, role, id } = event.data;
 
-        // response = handleOrganizationMembershipCreated(event.data);
+        response = orgService.updateOrg(organization.id, {
+          membersCount: organization.members_count,
+        });
         break;
       }
       case "organizationMembership.deleted": {
-        const {} = event.data;
-        // response = handleOrganizationMembershipDeleted(event.data);
+        const { organization, permissions, role, id } = event.data;
+
+        response = orgService.updateOrg(organization.id, {
+          membersCount: organization.members_count,
+        });
         break;
       }
       default: {

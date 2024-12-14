@@ -2,7 +2,8 @@
   "name": "blooms-api",
   "scripts": {
     "dev": "bun --watch src/index.ts ",
-    "deploy": "wrangler deploy --minify"
+    "deploy": "wrangler deploy --minify",
+    "ngrok": "ngrok http 8787"
   },
   "dependencies": {
     "hono": "^4.6.13",

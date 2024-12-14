@@ -1,4 +1,4 @@
-import { ClerkAuth } from "@/types";
+import type { ClerkAuth } from "@/types";
 import { PrismaClient, prisma } from "@repo/database";
 
 export class BaseService {
