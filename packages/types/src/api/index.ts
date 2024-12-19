@@ -6,3 +6,10 @@ export const sortingAndPaginationSchema = z.object({
   sortBy: z.string().optional(),
   sortOrder: z.enum(["asc", "desc"]).optional(),
 });
+
+export const createProductSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  sortBy: z.string(),
+  sortOrder: z.enum(["asc", "desc"]),
+});

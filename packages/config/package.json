@@ -8,7 +8,9 @@
     "lint": "biome lint .",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@repo/features": "workspace:^"
+  },
   "peerDependencies": {
     "next": "15.0.1"
   },

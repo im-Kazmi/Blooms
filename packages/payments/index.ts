@@ -1,4 +1,3 @@
-import "server-only";
 import { env } from "@repo/env";
 import Stripe from "stripe";
 

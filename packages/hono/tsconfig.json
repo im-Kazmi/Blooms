@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
-      "@repo/*": ["../../packages/*"],
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@repo/*": ["./*"],
+      "@repo/hono/*": ["./*"]
     },
     "target": "ESNext",
     "module": "ESNext",
@@ -13,5 +15,6 @@
     "types": ["@cloudflare/workers-types/2023-07-01"],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx"
-  }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
 }

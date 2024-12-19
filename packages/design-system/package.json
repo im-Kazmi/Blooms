@@ -41,6 +41,7 @@
     "@repo/analytics": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/env": "workspace:*",
+    "@repo/features": "workspace:^",
     "@repo/observability": "workspace:*",
     "@vercel/toolbar": "^0.1.27",
     "class-variance-authority": "^0.7.1",

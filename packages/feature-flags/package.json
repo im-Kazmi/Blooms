@@ -9,16 +9,17 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@repo/auth": "workspace:*",
     "@repo/analytics": "workspace:*",
+    "@repo/auth": "workspace:*",
     "@repo/design-system": "workspace:*",
+    "@repo/features": "workspace:^",
     "@vercel/flags": "^2.6.3"
   },
   "peerDependencies": {
     "next": "15.0.1"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^5.7.2"
   }
 }

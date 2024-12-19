@@ -1,5 +1,5 @@
 {
-  "name": "@repo/env",
+  "name": "@repo/features",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -9,12 +9,21 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@t3-oss/env-nextjs": "^0.11.1",
+    "@repo/hono": "workspace:*",
+    "@repo/react-query": "workspace:*",
+    "@repo/auth": "workspace:*",
+    "@repo/observability": "workspace:*",
+    "@vercel/toolbar": "^0.1.27",
+    "react": "19.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "22.10.1",
+    "@types/node": "^22.10.1",
+    "@types/react": "^19.0.1",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.16",
     "typescript": "^5.7.2"
   }
 }

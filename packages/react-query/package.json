@@ -1,5 +1,5 @@
 {
-  "name": "@repo/email",
+  "name": "@repo/react-query",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -9,12 +9,9 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
-    "@react-email/components": "0.0.30",
-    "@repo/env": "workspace:*",
-    "@repo/features": "workspace:^",
+    "@tanstack/react-query": "^5.62.8",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "resend": "^4.0.1"
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",

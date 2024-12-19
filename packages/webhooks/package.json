@@ -11,10 +11,11 @@
   "dependencies": {
     "@repo/auth": "workspace:*",
     "@repo/env": "workspace:*",
+    "@repo/features": "workspace:^",
     "svix": "^1.43.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
-    "@repo/typescript-config": "workspace:*"
+    "@repo/typescript-config": "workspace:*",
+    "typescript": "^5.7.2"
   }
 }

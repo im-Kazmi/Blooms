@@ -1,4 +1,3 @@
 import { hc } from "hono/client";
-import { AppType } from ".";
-
-export const { api } = hc<AppType>("http://localhost:8787/");
+import { type AppType } from ".";
+export const client = hc<AppType>("http://localhost:8787/");

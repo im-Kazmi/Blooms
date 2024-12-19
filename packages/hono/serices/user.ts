@@ -60,9 +60,7 @@ export class UserService extends BaseService {
       const user = await prisma.user.findUnique({
         where: { clerkId: id },
       });
-      if (!user) {
-        throw new Error("user not found");
-      }
+
       return user;
     } catch (error) {
       throw new Error(`Error retrieving user: ${(error as Error).message}`);
@@ -73,9 +71,6 @@ export class UserService extends BaseService {
       const user = await prisma.user.findUnique({
         where: { email: email },
       });
-      if (!user) {
-        throw new Error("user not found");
-      }
       return user;
     } catch (error) {
       throw new Error(`Error retrieving user: ${(error as Error).message}`);

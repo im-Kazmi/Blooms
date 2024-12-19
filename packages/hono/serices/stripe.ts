@@ -1,13 +1,10 @@
-import { Organization, prisma, Prisma } from "@repo/database";
+import { prisma, Prisma, Product, ProductPrice } from "@repo/database";
 import { BaseService } from "./base-service";
 import { stripe, Stripe } from "@repo/payments";
 import { UserService } from "./user";
-import { OrgService } from "./org";
-import { deflateSync } from "node:zlib";
-import { subscribe } from "node:diagnostics_channel";
+import { ProductPriceAmountType, ProductPriceType } from "@repo/types";
 
 const userService = new UserService(prisma);
-const orgService = new OrgService(prisma);
 
 export class StripeService extends BaseService {
   async createAccount(
@@ -188,6 +185,10 @@ export class StripeService extends BaseService {
     try {
       const user = await userService.getUserById(userId);
 
+      if (!user) {
+        throw new Error("user not found with this id.");
+      }
+
       if (user.stripeCustomerId) {
         return this.getCustomer(user.stripeCustomerId);
       }
@@ -213,36 +214,36 @@ export class StripeService extends BaseService {
     }
   }
 
-  async getOrCreateOrgCustomer(userId: string, org: Organization) {
-    try {
-      if (org.stripeCustomerId) {
-        return this.getCustomer(org.stripeCustomerId);
-      }
+  // async getOrCreateOrgCustomer(userId: string) {
+  //   try {
+  //     if (org.stripeCustomerId) {
+  //       return this.getCustomer(org.stripeCustomerId);
+  //     }
 
-      if (!org.billingEmail) {
-        throw new Error("Organization billing email is not set.");
-      }
+  //     if (!org.billingEmail) {
+  //       throw new Error("Organization billing email is not set.");
+  //     }
 
-      const customer = await stripe.customers.create({
-        name: org.slug,
-        email: org.billingEmail,
-        metadata: {
-          name: org.slug,
-          email: org.billingEmail,
-        },
-      });
+  //     const customer = await stripe.customers.create({
+  //       name: org.slug,
+  //       email: org.billingEmail,
+  //       metadata: {
+  //         name: org.slug,
+  //         email: org.billingEmail,
+  //       },
+  //     });
 
-      if (!customer) return null;
+  //     if (!customer) return null;
 
-      await orgService.updateOrg(org.id, {
-        stripeCustomerId: customer.id,
-      });
+  //     await orgService.updateOrg(org.id, {
+  //       stripeCustomerId: customer.id,
+  //     });
 
-      return customer;
-    } catch (error) {
-      throw new Error(`Error creating product: ${(error as Error).message}`);
-    }
-  }
+  //     return customer;
+  //   } catch (error) {
+  //     throw new Error(`Error creating product: ${(error as Error).message}`);
+  //   }
+  // }
 
   async listUserPaymentMethods(customerId: string) {
     try {
@@ -287,28 +288,37 @@ export class StripeService extends BaseService {
     }
   }
 
-  async createOrgPortalSession(customerId: string, org: Organization) {
-    try {
-      const customer = await this.getOrCreateOrgCustomer(customerId, org);
+  // async createOrgPortalSession(customerId: string, org: Organization) {
+  //   try {
+  //     const customer = await this.getOrCreateOrgCustomer(customerId, org);
 
-      if (!customer) return null;
+  //     if (!customer) return null;
 
-      const params: Stripe.BillingPortal.SessionCreateParams = {
-        customer: customer.id,
-        return_url: "", //todo
-      };
-      const session = await stripe.billingPortal.sessions.create(params);
+  //     const params: Stripe.BillingPortal.SessionCreateParams = {
+  //       customer: customer.id,
+  //       return_url: "", //todo
+  //     };
+  //     const session = await stripe.billingPortal.sessions.create(params);
 
-      return session;
-    } catch (error) {
-      throw new Error(`Error creating product: ${(error as Error).message}`);
-    }
-  }
+  //     return session;
+  //   } catch (error) {
+  //     throw new Error(`Error creating product: ${(error as Error).message}`);
+  //   }
+  // }
 
-  async createProduct(name: string, description: string) {
+  async createProduct({
+    name,
+    description,
+    metadata,
+  }: {
+    name: string;
+    description?: string;
+    metadata: Record<string, string>;
+  }) {
     try {
       const params: Stripe.ProductCreateParams = {
         name: name,
+        metadata: metadata ?? {},
       };
 
       if (description) params["description"] = description;
@@ -322,19 +332,68 @@ export class StripeService extends BaseService {
   }
 
   async createPriceForProduct(
-    productId: string,
-    params: Stripe.PriceCreateParams,
-  ) {
-    try {
-      const price = await stripe.prices.create({
-        ...params,
-        product: productId,
-      });
+    product: Product & { prices: ProductPrice[] },
+  ): Promise<Stripe.Price[]> {
+    const createdPrices: Stripe.Price[] = [];
 
-      return price;
-    } catch (error) {
-      throw new Error(`Error creating price: ${(error as Error).message}`);
+    for (const price of product.prices) {
+      const params: Stripe.PriceCreateParams = {
+        currency: "usd",
+        product: product.stripeProductId!,
+      };
+
+      if (price.type === ProductPriceType.OneTime) {
+        switch (price.amountType) {
+          case ProductPriceAmountType.Free:
+            params.unit_amount = 0;
+            break;
+          case ProductPriceAmountType.Fixed:
+            params.unit_amount = price.priceAmount!;
+            break;
+          case ProductPriceAmountType.Custom:
+            params.custom_unit_amount = {
+              enabled: true,
+              minimum: price.minimumAmount!,
+              maximum: price.maximumAmount!,
+              preset: price.presetAmount!,
+            };
+            break;
+        }
+      } else if (price.type === ProductPriceType.Recurring) {
+        params.recurring = {
+          interval:
+            price.recurringInterval as Stripe.PriceCreateParams.Recurring.Interval,
+        };
+        switch (price.amountType) {
+          case ProductPriceAmountType.Free:
+            params.unit_amount = 0;
+            break;
+          case ProductPriceAmountType.Fixed:
+            params.unit_amount = price.priceAmount!;
+            break;
+          case ProductPriceAmountType.Custom:
+            params.custom_unit_amount = {
+              enabled: true,
+              minimum: price.minimumAmount!,
+              maximum: price.maximumAmount!,
+              preset: price.presetAmount!,
+            };
+            break;
+        }
+      }
+
+      try {
+        const price = await stripe.prices.create({
+          ...params,
+        });
+
+        createdPrices.push(price);
+      } catch (error) {
+        throw new Error(`Error creating price: ${(error as Error).message}`);
+      }
     }
+
+    return createdPrices;
   }
 
   async updateProduct(productId: string, params: Stripe.ProductUpdateParams) {
