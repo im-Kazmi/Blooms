@@ -39,6 +39,8 @@ export const AuthProvider = (
 
   return (
     <ClerkProvider
+      signInForceRedirectUrl="/onboarding"
+      signUpForceRedirectUrl="/onboarding"
       {...properties}
       appearance={{ baseTheme, variables, elements }}
     />

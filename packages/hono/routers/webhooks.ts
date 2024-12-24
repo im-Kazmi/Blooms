@@ -1,91 +1,78 @@
-import { analytics } from "@repo/analytics/posthog/server";
-import type {
-  DeletedObjectJSON,
-  OrganizationJSON,
-  OrganizationMembershipJSON,
-  UserJSON,
-  WebhookEvent,
-} from "@repo/auth/server";
-import { env } from "@repo/env";
-import { Webhook } from "svix";
-import { Hono } from "hono";
+import type { WebhookEvent } from '@repo/auth/server';
+import { Hono } from 'hono';
+import { Webhook } from 'svix';
 
-type Bindings = {
-  CLERK_WEBHOOK_SECRET: string;
-};
+import { userService } from '@/serices';
 
-import { userService } from "@/serices";
-
-const app = new Hono<{ Bindings: Bindings }>()
-  .use(userService.middleware("userService"))
-  .post("/clerk", async (c) => {
-    const svixId = c.req.header("svix-id");
-    const svixTimestamp = c.req.header("svix-timestamp");
-    const svixSignature = c.req.header("svix-signature");
+const app = new Hono()
+  .use(userService.middleware('userService'))
+  .post('/clerk', async (c) => {
+    const svixId = c.req.header('svix-id');
+    const svixTimestamp = c.req.header('svix-timestamp');
+    const svixSignature = c.req.header('svix-signature');
 
     if (!svixId || !svixTimestamp || !svixSignature) {
-      return c.json("Error occured -- no svix headers", 400);
+      return c.json('Error occured -- no svix headers', 400);
     }
 
     const body = await c.req.text();
 
-    const webhook = new Webhook("whsec_Rebikd3hBEA80VUpPpWO2b2VC2/f0b19");
+    const webhook = new Webhook('whsec_CYxEgedyJ7qBkgfQdN2uWGgH1V7mLCKi');
 
     let event: WebhookEvent | undefined;
 
     // Verify the payload with the headers
     try {
       event = webhook.verify(body, {
-        "svix-id": svixId,
-        "svix-timestamp": svixTimestamp,
-        "svix-signature": svixSignature,
+        'svix-id': svixId,
+        'svix-timestamp': svixTimestamp,
+        'svix-signature': svixSignature,
       }) as WebhookEvent;
     } catch (error) {
-      log.error("Error verifying webhook:", { error });
-      return new Response("Error occured", {
+      return new Response('Error occured', {
         status: 400,
       });
     }
 
     // const orgService = c.get("orgService");
-    const userService = c.get("userService");
+    const userService = c.get('userService');
     // Get the ID and type
     const { id } = event.data;
     const eventType = event.type;
 
-    console.log("eventType = ", eventType);
+    console.log('eventType = ', eventType);
     try {
       let response;
       switch (eventType) {
-        case "user.created": {
+        case 'user.created': {
           const { id, email_addresses, image_url, first_name, last_name } =
             event.data;
           response = userService.createUser({
             clerkId: id,
             email: email_addresses[0].email_address,
             avatarUrl: image_url ?? null,
-            name: `${first_name}${last_name ? ` ${last_name}` : ""}`,
+            name: `${first_name}${last_name ? ` ${last_name}` : ''}`,
           });
           break;
         }
-        case "user.updated": {
+        case 'user.updated': {
           const { id, email_addresses, image_url, first_name, last_name } =
             event.data;
           response = userService.updateUser(id, {
             email: email_addresses[0].email_address,
             avatarUrl: image_url ?? null,
-            name: `${first_name}${last_name ? ` ${last_name}` : ""}`,
+            name: `${first_name}${last_name ? ` ${last_name}` : ''}`,
           });
           break;
         }
-        case "user.deleted": {
+        case 'user.deleted': {
           const { id } = event.data;
           if (id) {
             response = userService.deleteUser(id);
           }
           break;
         }
-        case "organization.created": {
+        case 'organization.created': {
           const {
             name,
             slug,
@@ -109,7 +96,7 @@ const app = new Hono<{ Bindings: Bindings }>()
           // });
           break;
         }
-        case "organization.updated": {
+        case 'organization.updated': {
           const {
             name,
             slug,
@@ -129,7 +116,7 @@ const app = new Hono<{ Bindings: Bindings }>()
           // });
           break;
         }
-        case "organizationMembership.created": {
+        case 'organizationMembership.created': {
           const { organization, permissions, role, id } = event.data;
 
           // response = orgService.updateOrg(organization.id, {
@@ -137,7 +124,7 @@ const app = new Hono<{ Bindings: Bindings }>()
           // });
           break;
         }
-        case "organizationMembership.deleted": {
+        case 'organizationMembership.deleted': {
           const { organization, permissions, role, id } = event.data;
 
           // response = orgService.updateOrg(organization.id, {
@@ -152,11 +139,11 @@ const app = new Hono<{ Bindings: Bindings }>()
 
       console.log(response);
 
-      return c.json("Everything is perfect. webhook successuly handled.", 200);
+      return c.json('Everything is perfect. webhook successuly handled.', 200);
     } catch (err) {
       console.log(err);
     }
-    return c.json("i think webhook not handled correctly.", 400);
+    return c.json('i think webhook not handled correctly.', 400);
   });
 
 export default app;

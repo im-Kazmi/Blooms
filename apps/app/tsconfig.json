@@ -4,7 +4,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@repo/*": ["../../packages/*"]
+      "@repo/*": ["../../packages/*"],
+      "@/api*": ["../../packages/hono/*", "./*"],
+      "@/features*": ["../../packages/features*", "./*"]
     }
   },
   "include": [

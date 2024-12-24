@@ -4,7 +4,6 @@
     "paths": {
       "@/*": ["./*"],
       "@repo/*": ["./*"],
-      "@repo/hono/*": ["./*"]
     },
     "target": "ESNext",
     "module": "ESNext",

@@ -8,9 +8,9 @@
       }
     ],
     "paths": {
-      "@/api/*": ["../hono/*", "./src/*"]
+      "@/*": ["../hono/*", "./src/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*"],
   "exclude": ["node_modules"]
 }

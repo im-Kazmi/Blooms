@@ -13,9 +13,8 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@hookform/resolvers": "^3.9.1",
     "@prisma/client": "6.0.1",
-    "@repo/analytics": "workspace:*",
-    "@repo/react-query": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/collaboration": "workspace:*",
     "@repo/config": "workspace:*",
@@ -26,19 +25,26 @@
     "@repo/features": "workspace:^",
     "@repo/hono": "workspace:*",
     "@repo/next-config": "workspace:*",
+    "@repo/react-query": "workspace:*",
     "@repo/security": "workspace:*",
     "@repo/seo": "workspace:*",
     "@repo/tailwind-config": "workspace:*",
     "@repo/webhooks": "workspace:*",
     "@sentry/nextjs": "^8.42.0",
+    "framer-motion": "^11.15.0",
     "fuse.js": "^7.0.0",
+    "hono": "^4.6.13",
     "import-in-the-middle": "^1.11.3",
     "lucide-react": "^0.468.0",
     "next": "15.0.4",
     "next-themes": "^0.4.4",
+    "nuqs": "^2.2.3",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "require-in-the-middle": "^7.4.0"
+    "react-hook-form": "^7.54.0",
+    "react-use-measure": "^2.1.1",
+    "require-in-the-middle": "^7.4.0",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@repo/testing": "workspace:*",

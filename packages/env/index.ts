@@ -42,8 +42,6 @@ const client: Parameters<typeof createEnv>[0]["client"] = {
   NEXT_PUBLIC_API_URL: z.string().optional(),
   NEXT_PUBLIC_DOCS_URL: z.string().optional(),
   NEXT_PUBLIC_GA_MEASUREMENT_ID: z.string().optional(),
-  NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
-  NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
 
   // Added by Vercel
   NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL: z.string().optional(),

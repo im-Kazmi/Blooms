@@ -1,6 +1,15 @@
-import { authMiddleware } from '@repo/auth/middleware';
+import { clerkMiddleware, createRouteMatcher } from '@repo/auth/server';
 
-export default authMiddleware();
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/onboarding(.*)',
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    await auth.protect();
+  }
+});
 
 export const config = {
   matcher: [

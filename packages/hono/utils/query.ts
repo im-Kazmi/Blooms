@@ -1,4 +1,4 @@
-import { Prisma } from "@repo/database";
+import type { Prisma } from '@repo/database';
 
 export interface PaginationParams {
   page?: number;
@@ -7,7 +7,7 @@ export interface PaginationParams {
 
 export interface SortingParams<T extends string = string> {
   sortBy?: T;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface PaginatedResult<T> {
@@ -28,7 +28,7 @@ export class QueryUtils {
   }
 
   static getSortingParams<T extends string>(params: SortingParams<T>) {
-    const { sortBy, sortOrder = "asc" } = params;
+    const { sortBy, sortOrder = 'asc' } = params;
     if (sortBy) {
       return { [sortBy]: sortOrder };
     }
@@ -38,7 +38,7 @@ export class QueryUtils {
   static async paginateQuery<T>(
     query: Prisma.PrismaPromise<T[]>,
     model: { count: () => Prisma.PrismaPromise<number> },
-    params: PaginationParams,
+    params: PaginationParams
   ): Promise<PaginatedResult<T>> {
     const { page = 1, pageSize = 10 } = params;
     const data = await query;

@@ -43,6 +43,7 @@
     "@repo/env": "workspace:*",
     "@repo/features": "workspace:^",
     "@repo/observability": "workspace:*",
+    "@tanstack/react-table": "^8.20.6",
     "@vercel/toolbar": "^0.1.27",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

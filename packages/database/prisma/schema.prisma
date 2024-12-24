@@ -151,12 +151,32 @@ enum WebhookFormat {
   slack
 }
 
+model User {
+  clerkId                String    @id
+  name                   String
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  email                  String    @unique
+  avatarUrl              String?
+  acceptedTermsOfService Boolean   @default(false)
+  stripeCustomerId       String?   @unique
+  blockedAt              DateTime?
+  meta                   Json      @default("{}")
+  billingEmail           String?
+  metadata               Json      @default("{}")
+  profileSettings        Json      @default("{}")
+  featureSettings        Json      @default("{}")
+
+  UserNotification UserNotification[]
+  stores           Store[]
+}
+
 model Account {
   id                      String        @id @default(uuid())
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
   accountType             AccountType
-  adminId                 String
+  storeId                 String
   stripeId                String?
   openCollectiveSlug      String?
   email                   String?
@@ -172,9 +192,31 @@ model Account {
   status                  AccountStatus @default(CREATED)
   data                    Json          @default("{}")
 
-  admin User @relation(fields: [adminId], references: [clerkId])
+  store Store @relation(fields: [storeId], references: [id])
 
   Transaction Transaction[]
+}
+
+model Store {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  name        String
+  url         String
+  active      Boolean  @default(true)
+  description String?
+  userId      String
+  currency    String   @default("USD")
+
+  user             User              @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  webhookEndpoints WebhookEndpoint[]
+  accounts         Account[]
+  benefits         Benefit[]
+  customfields     CustomField[]
+  discounts        Discount[]
+  files            File[]
+  products         Product[]
+  licenceKeys      LicenseKey[]
 }
 
 model Benefit {
@@ -183,13 +225,13 @@ model Benefit {
   updatedAt       DateTime    @updatedAt
   type            BenefitType
   description     String
-  userId          String
+  storeId         String
   isTaxApplicable Boolean     @default(false)
   selectable      Boolean     @default(true)
   deletable       Boolean     @default(true)
   properties      Json
 
-  user            User             @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  store           Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
   grants          BenefitGrant[]
   productBenefits ProductBenefit[]
   LicenseKey      LicenseKey[]
@@ -207,13 +249,11 @@ model BenefitGrant {
   subscriptionId String?
   orderId        String?
 
-  user         User          @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
   benefit      Benefit       @relation(fields: [benefitId], references: [id], onDelete: Cascade)
   subscription Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   order        Order?        @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([subscriptionId, userId, benefitId])
-  @@index([userId])
   @@index([benefitId])
   @@index([subscriptionId])
   @@index([orderId])
@@ -247,7 +287,6 @@ model Checkout {
   product            Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
   productPrice       ProductPrice         @relation(fields: [productPriceId], references: [id], onDelete: Cascade)
   discount           Discount?            @relation(fields: [discountId], references: [id], onDelete: SetNull)
-  customer           User?                @relation(fields: [customerId], references: [clerkId], onDelete: Cascade)
   subscription       Subscription?
   order              Order?
   DiscountRedemption DiscountRedemption[]
@@ -261,8 +300,8 @@ model CustomField {
   slug       String
   name       String
   properties Json
-  userId     String
-  user       User     @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  storeId    String
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([type])
   @@index([slug])
@@ -287,10 +326,10 @@ model Discount {
   checkouts           Checkout[]
   subscriptions       Subscription[]
   Order               Order[]
-  userId              String
-  user                User                 @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  storeId             String
+  store               Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, code])
+  @@unique([storeId, code])
 }
 
 model DiscountProduct {
@@ -318,7 +357,6 @@ model File {
   id                   String           @id @default(uuid())
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
-  userId               String
   name                 String
   version              String?
   path                 String
@@ -335,7 +373,8 @@ model File {
 
   ProductMedia ProductMedia[]
 
-  user User @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  storeId String
+  store   Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
 
 model LicenseKey {
@@ -352,8 +391,8 @@ model LicenseKey {
   lastValidatedAt  DateTime?
   expiresAt        DateTime?
 
-  userId      String
-  user        User                   @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  storeId     String
+  store       Store                  @relation(fields: [storeId], references: [id], onDelete: Cascade)
   benefit     Benefit                @relation(fields: [benefitId], references: [id], onDelete: Cascade)
   activations LicenseKeyActivation[]
 }
@@ -395,7 +434,6 @@ model Order {
   subscriptionId  String?
   checkoutId      String?  @unique
 
-  user          User           @relation(fields: [userId], references: [clerkId])
   product       Product        @relation(fields: [productId], references: [id])
   productPrice  ProductPrice   @relation(fields: [productPriceId], references: [id])
   discount      Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
@@ -407,7 +445,6 @@ model Order {
 
 model Product {
   id              String   @id @default(uuid())
-  userId          String
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   name            String
@@ -423,7 +460,8 @@ model Product {
   discountProducts    DiscountProduct[]
   orders              Order[]
   subscriptions       Subscription[]
-  user                User                 @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  storeId             String
+  store               Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
 
 model ProductBenefit {
@@ -467,8 +505,6 @@ model ProductMedia {
 }
 
 enum SubscriptionRecurringInterval {
-  day
-  week
   month
   year
 }
@@ -509,7 +545,7 @@ model Subscription {
   cancelAtPeriodEnd    Boolean
   startedAt            DateTime?
   endedAt              DateTime?
-  userId               String
+  customerId           String
   productId            String
   priceId              String
   discountId           String?
@@ -517,7 +553,6 @@ model Subscription {
   customFields         Json?
   metadata             Json?
 
-  user     User           @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
   product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   price    ProductPrice   @relation(fields: [priceId], references: [id], onDelete: Cascade)
   discount Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
@@ -587,7 +622,6 @@ model Transaction {
   incurredByTransactionId      String?
 
   account                     Account?      @relation(fields: [accountId], references: [id], onDelete: SetNull)
-  paymentUser                 User?         @relation("PaymentUser", fields: [paymentUserId], references: [clerkId], onDelete: SetNull)
   order                       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
   paymentTransaction          Transaction?  @relation("BalanceTransactions", fields: [paymentTransactionId], references: [id], onDelete: SetNull)
   balanceTransactions         Transaction[] @relation("BalanceTransactions")
@@ -597,40 +631,6 @@ model Transaction {
   paidTransactions            Transaction[] @relation("PaidTransactions")
   incurredByTransaction       Transaction?  @relation("IncurredTransactions", fields: [incurredByTransactionId], references: [id], onDelete: SetNull)
   incurredTransactions        Transaction[] @relation("IncurredTransactions")
-}
-
-model User {
-  clerkId                     String    @id
-  name                        String
-  createdAt                   DateTime  @default(now())
-  updatedAt                   DateTime  @updatedAt
-  email                       String    @unique
-  avatarUrl                   String?
-  acceptedTermsOfService      Boolean   @default(false)
-  stripeCustomerId            String?   @unique
-  blockedAt                   DateTime?
-  meta                        Json      @default("{}")
-  billingEmail                String?
-  totalMonthlySpendingLimit   Int?
-  perUserMonthlySpendingLimit Int?
-  metadata                    Json      @default("{}")
-  profileSettings             Json      @default("{}")
-  featureSettings             Json      @default("{}")
-
-  transactions     Transaction[]      @relation("PaymentUser")
-  BenefitGrant     BenefitGrant[]
-  Checkout         Checkout[]
-  LicenseKey       LicenseKey[]
-  Order            Order[]
-  Subscription     Subscription[]
-  UserNotification UserNotification[]
-  WebhookEndpoint  WebhookEndpoint[]
-  Account          Account[]
-  Benefit          Benefit[]
-  CustomField      CustomField[]
-  Discount         Discount[]
-  File             File[]
-  Product          Product[]
 }
 
 model UserNotification {
@@ -662,12 +662,12 @@ model WebhookEndpoint {
   url          String
   format       WebhookFormat
   secret       String
-  userId       String?
   events       WebhookEventType[]
-  user         User?              @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  storeId      String
+  store        Store              @relation(fields: [storeId], references: [id], onDelete: Cascade)
   WebhookEvent WebhookEvent[]
 
-  @@index([userId])
+  @@index([storeId])
 }
 
 model WebhookEvent {
