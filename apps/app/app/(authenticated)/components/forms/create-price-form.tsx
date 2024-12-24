@@ -1,26 +1,20 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  type ProductPrice,
   ProductPriceAmountType,
   ProductPriceType,
   SubscriptionRecurringInterval,
 } from '@prisma/client';
+import { Badge } from '@repo/design-system/components/ui/badge';
 import { Button } from '@repo/design-system/components/ui/button';
 import {
-  Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@repo/design-system/components/ui/form';
-import { Input } from '@repo/design-system/components/ui/input';
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from '@repo/design-system/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -28,179 +22,280 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@repo/design-system/components/ui/select';
-import { Switch } from '@repo/design-system/components/ui/switch';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@repo/design-system/components/ui/tabs';
+import { useEffect, useState } from 'react';
+import { useFieldArray, useFormContext } from 'react-hook-form';
+import type * as z from 'zod';
+import { PriceInput } from '../price-input';
+import type { createProductSchema } from './create-product-form';
 
-const priceFormSchema = z.object({
-  type: z.nativeEnum(ProductPriceType),
-  recurringInterval: z.nativeEnum(SubscriptionRecurringInterval).optional(),
-  amountType: z.nativeEnum(ProductPriceAmountType),
-  priceCurrency: z.string().min(3).max(3),
-  priceAmount: z.number().min(0).optional(),
-  minimumAmount: z.number().min(0).optional(),
-  maximumAmount: z.number().min(0).optional(),
-  presetAmount: z.number().min(0).optional(),
-  isArchived: z.boolean(),
-});
-
-type PriceFormValues = z.infer<typeof priceFormSchema>;
+type FormType = z.infer<typeof createProductSchema>;
 
 export function CreatePriceForm() {
+  const form = useFormContext<FormType>();
+  const { control } = form;
+  const { fields, append, remove, replace } = useFieldArray({
+    control,
+    name: 'prices',
+  });
+
   const [priceType, setPriceType] = useState<ProductPriceType>(
     ProductPriceType.one_time
   );
-  const [amountType, setAmountType] = useState<ProductPriceAmountType>(
-    ProductPriceAmountType.fixed
+
+  const [amountType, setAmountType] = useState<'fixed' | 'custom' | 'free'>(
+    fields.length > 0 && (fields as ProductPrice[])[0].amountType
+      ? (fields as ProductPrice[])[0].amountType
+      : 'fixed'
   );
 
-  const form = useForm<PriceFormValues>({
-    resolver: zodResolver(priceFormSchema),
-    defaultValues: {
-      type: ProductPriceType.one_time,
-      amountType: ProductPriceAmountType.fixed,
-      priceCurrency: 'USD',
-      isArchived: false,
-    },
-  });
+  useEffect(() => {
+    if (priceType === ProductPriceType.one_time) {
+      if (amountType === 'fixed') {
+        replace([
+          {
+            type: 'one_time',
 
-  function onSubmit(data: PriceFormValues) {
-    console.log(data);
-  }
+            amountType: 'fixed',
+
+            amount: 0,
+          },
+        ]);
+      } else if (amountType === 'custom') {
+        replace([
+          {
+            type: 'one_time',
+
+            amountType: 'custom',
+          },
+        ]);
+      } else {
+        replace([
+          {
+            type: 'one_time',
+
+            amountType: 'free',
+          },
+        ]);
+      }
+    } else if (priceType === ProductPriceType.recurring) {
+      if (amountType === 'fixed') {
+        replace([
+          {
+            type: 'recurring',
+            amountType: 'fixed',
+            recurringInterval: SubscriptionRecurringInterval.month,
+            amount: 1,
+          },
+        ]);
+      } else if (amountType === 'free') {
+        replace([
+          {
+            type: 'recurring',
+
+            amountType: 'free',
+
+            recurringInterval: SubscriptionRecurringInterval.month,
+          },
+        ]);
+      } else {
+        setAmountType('fixed');
+      }
+    }
+  }, [priceType, replace, amountType]);
+
+  const handleAddPrice = (
+    type: ProductPriceType,
+    interval?: SubscriptionRecurringInterval
+  ) => {
+    append({
+      type,
+      amountType: ProductPriceAmountType.fixed,
+      amount: 0,
+      ...(interval && { recurringInterval: interval }),
+    });
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+    <div className="space-y-6">
+      <Tabs
+        onValueChange={(value) => setPriceType(value as ProductPriceType)}
+        defaultValue={ProductPriceType.one_time}
+      >
+        <TabsList>
+          <TabsTrigger value={ProductPriceType.one_time}>One Time</TabsTrigger>
+          <TabsTrigger value={ProductPriceType.recurring}>
+            Subscription
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {fields.map((field, index) => (
+        <PriceField
+          key={field.id}
+          index={index}
+          remove={remove}
+          priceType={priceType}
+        />
+      ))}
+
+      {priceType === ProductPriceType.one_time && fields.length === 0 && (
+        <Button
+          type="button"
+          onClick={() => handleAddPrice(ProductPriceType.one_time)}
+        >
+          Add One-time Price
+        </Button>
+      )}
+
+      {priceType === ProductPriceType.recurring && (
+        <div className="flex space-x-2">
+          {!fields.some(
+            (f) => f.recurringInterval === SubscriptionRecurringInterval.month
+          ) && (
+            <Button
+              type="button"
+              onClick={() =>
+                handleAddPrice(
+                  ProductPriceType.recurring,
+                  SubscriptionRecurringInterval.month
+                )
+              }
+            >
+              Add Monthly Price
+            </Button>
+          )}
+          {!fields.some(
+            (f) => f.recurringInterval === SubscriptionRecurringInterval.year
+          ) && (
+            <Button
+              type="button"
+              onClick={() =>
+                handleAddPrice(
+                  ProductPriceType.recurring,
+                  SubscriptionRecurringInterval.year
+                )
+              }
+            >
+              Add Yearly Price
+            </Button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface PriceFieldProps {
+  index: number;
+  remove: (index: number) => void;
+  priceType: ProductPriceType;
+}
+
+function PriceField({ index, remove, priceType }: PriceFieldProps) {
+  const { control, watch, setValue, getValues } = useFormContext<FormType>();
+  const amountType = watch(`prices.${index}.amountType`);
+  const interval = watch(`prices.${index}.recurringInterval`);
+
+  return (
+    <div className="space-y-4 p-4 border rounded-md">
+      <div className="flex justify-between items-center">
         <FormField
-          control={form.control}
-          name="type"
+          control={control}
+          name={`prices.${index}.amountType`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Price Type</FormLabel>
               <Select
-                onValueChange={(value) => {
-                  field.onChange(value);
-                  setPriceType(value as ProductPriceType);
+                onValueChange={(val) => {
+                  if (priceType === ProductPriceType.recurring) {
+                    setValue(
+                      `prices.${0}.amountType`,
+                      val as ProductPriceAmountType
+                    );
+                    if (getValues('prices').length > 1) {
+                      setValue(
+                        `prices.${1}.amountType`,
+                        val as ProductPriceAmountType
+                      );
+                    }
+                  } else {
+                    field.onChange(val);
+                  }
                 }}
-                defaultValue={field.value}
+                value={field.value}
               >
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select a price type" />
+                    <SelectValue placeholder="Select price type" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value={ProductPriceType.one_time}>
-                    One Time
+                  <SelectItem value={ProductPriceAmountType.fixed}>
+                    Fixed
                   </SelectItem>
-                  <SelectItem value={ProductPriceType.recurring}>
-                    Recurring
+                  {priceType !== ProductPriceType.recurring && (
+                    <SelectItem value={ProductPriceAmountType.custom}>
+                      Custom
+                    </SelectItem>
+                  )}
+                  <SelectItem value={ProductPriceAmountType.free}>
+                    Free
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
             </FormItem>
           )}
         />
-
-        {priceType === ProductPriceType.recurring && (
-          <FormField
-            control={form.control}
-            name="recurringInterval"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Recurring Interval</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a recurring interval" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value={SubscriptionRecurringInterval.month}>
-                      Monthly
-                    </SelectItem>
-                    <SelectItem value={SubscriptionRecurringInterval.year}>
-                      Yearly
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
+        {interval === 'month' ? (
+          <Badge>Montly plan</Badge>
+        ) : interval === 'year' ? (
+          <Badge>Yearly plan</Badge>
+        ) : null}
+      </div>
+      {amountType === ProductPriceAmountType.fixed && (
         <FormField
-          control={form.control}
-          name="amountType"
-          render={({ field }) => (
-            <FormItem className="space-y-3">
-              <FormLabel>Amount Type</FormLabel>
-              <FormControl>
-                <RadioGroup
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    setAmountType(value as ProductPriceAmountType);
-                  }}
-                  defaultValue={field.value}
-                  className="flex flex-col space-y-1"
-                >
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value={ProductPriceAmountType.fixed} />
-                    </FormControl>
-                    <FormLabel className="font-normal">Fixed</FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value={ProductPriceAmountType.custom} />
-                    </FormControl>
-                    <FormLabel className="font-normal">Custom</FormLabel>
-                  </FormItem>
-                  <FormItem className="flex items-center space-x-3 space-y-0">
-                    <FormControl>
-                      <RadioGroupItem value={ProductPriceAmountType.free} />
-                    </FormControl>
-                    <FormLabel className="font-normal">Free</FormLabel>
-                  </FormItem>
-                </RadioGroup>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="priceCurrency"
+          control={control}
+          name={`prices.${index}.amount`}
+          rules={{
+            required: 'Amount is required',
+            min: { value: 0, message: 'Amount must be positive' },
+          }}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Currency</FormLabel>
+              <FormLabel>Amount</FormLabel>
               <FormControl>
-                <Input placeholder="USD" {...field} />
+                <PriceInput
+                  type="number"
+                  {...field}
+                  onChange={(e) =>
+                    field.onChange(Number.parseFloat(e.target.value))
+                  }
+                />
               </FormControl>
-              <FormDescription>
-                Enter the 3-letter currency code (e.g., USD, EUR, GBP)
-              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+      )}
 
-        {amountType === ProductPriceAmountType.fixed && (
+      {amountType === ProductPriceAmountType.custom && (
+        <>
           <FormField
-            control={form.control}
-            name="priceAmount"
+            control={control}
+            name={`prices.${index}.minimumAmount`}
+            rules={{
+              required: 'Minimum amount is required',
+              min: { value: 0, message: 'Amount must be positive' },
+            }}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Price Amount</FormLabel>
+                <FormLabel>Minimum Amount</FormLabel>
                 <FormControl>
-                  <Input
+                  <PriceInput
                     type="number"
                     {...field}
                     onChange={(e) =>
@@ -212,94 +307,31 @@ export function CreatePriceForm() {
               </FormItem>
             )}
           />
-        )}
-
-        {amountType === ProductPriceAmountType.custom && (
-          <>
-            <FormField
-              control={form.control}
-              name="minimumAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Minimum Amount</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(Number.parseFloat(e.target.value))
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="maximumAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Maximum Amount</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(Number.parseFloat(e.target.value))
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="presetAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Preset Amount</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) =>
-                        field.onChange(Number.parseFloat(e.target.value))
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </>
-        )}
-
-        <FormField
-          control={form.control}
-          name="isArchived"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Archived</FormLabel>
-                <FormDescription>
-                  This price will be archived and not available for new
-                  purchases.
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit">Create Price</Button>
-      </form>
-    </Form>
+          <FormField
+            control={control}
+            name={`prices.${index}.presetAmount`}
+            rules={{
+              required: 'Suggested amount is required',
+              min: { value: 0, message: 'Amount must be positive' },
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Suggested Amount</FormLabel>
+                <FormControl>
+                  <PriceInput
+                    type="number"
+                    {...field}
+                    onChange={(e) =>
+                      field.onChange(Number.parseFloat(e.target.value))
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </>
+      )}
+    </div>
   );
 }

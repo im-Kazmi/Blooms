@@ -12,19 +12,18 @@
 
 'use client';
 
-import {} from 'framer-motion';
-import {} from 'lucide-react';
-
-import { CreatePriceForm } from '@/app/(authenticated)/components/forms/create-price-form';
+import { CreateProductForm } from '@/app/(authenticated)/components/forms/create-product-form';
 import { ShadowWrapper } from '@/app/(authenticated)/components/shadow-wrapper';
 import {} from '@repo/design-system/components/ui/avatar';
 import {} from '@repo/design-system/components/ui/tooltip';
+import {} from 'framer-motion';
+import {} from 'lucide-react';
 import {} from '../../../../components/expandable-card';
 
 export default function page() {
   return (
     <ShadowWrapper>
-      <CreatePriceForm />
+      <CreateProductForm />
     </ShadowWrapper>
   );
 }

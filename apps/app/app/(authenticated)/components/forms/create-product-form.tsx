@@ -1,13 +1,23 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ProductPriceAmountType, ProductPriceType } from '@prisma/client';
 import { Button } from '@repo/design-system/components/ui/button';
-import { Form } from '@repo/design-system/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@repo/design-system/components/ui/form';
+import { Input } from '@repo/design-system/components/ui/input';
 import { toast } from '@repo/design-system/components/ui/use-toast';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
+import { CreatePriceForm } from './create-price-form';
 
-const productSchema = z.object({
+export const createProductSchema = z.object({
   name: z.string().min(2, {
     message: 'Product name must be at least 2 characters.',
   }),
@@ -16,11 +26,12 @@ const productSchema = z.object({
     .array(
       z.object({
         type: z.enum(['one_time', 'recurring']),
-        recurringInterval: z
-          .enum(['daily', 'weekly', 'monthly', 'yearly'])
-          .optional(),
-        amountType: z.enum(['fixed', 'minimum', 'pay_what_you_want']),
-        amount: z.number().min(0),
+        recurringInterval: z.enum(['month', 'year']).optional(),
+        amountType: z.enum(['fixed', 'custom', 'free']),
+        amount: z.number().min(0).optional(),
+        minimumAmount: z.number().min(0).optional(),
+        maximumAmount: z.number().min(0).optional(),
+        presetAmount: z.number().min(0).optional(),
       })
     )
     .min(1, {
@@ -28,15 +39,21 @@ const productSchema = z.object({
     }),
 });
 
-type ProductFormValues = z.infer<typeof productSchema>;
+type ProductFormValues = z.infer<typeof createProductSchema>;
 
-export default function ProductCreationPage() {
+export function CreateProductForm() {
   const form = useForm<ProductFormValues>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(createProductSchema),
     defaultValues: {
       name: '',
       description: '',
-      prices: [],
+      prices: [
+        {
+          type: ProductPriceType.one_time,
+          amountType: ProductPriceAmountType.fixed,
+          amount: 1,
+        },
+      ],
     },
   });
 
@@ -52,23 +69,45 @@ export default function ProductCreationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 p-8">
-      <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div className="p-8">
-          <h1 className="text-3xl font-bold text-gray-800 mb-6">
-            Create New Product
-          </h1>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* <ProductNameInput form={form} />
-              <ProductDescriptionInput form={form} />
-              <PriceCreator form={form} /> */}
-              <Button type="submit" className="w-full">
-                Create Product
-              </Button>
-            </form>
-          </Form>
-        </div>
+    <div className="max-w-4xl mx-auto  rounded-2xl shadow-xl overflow-hidden ">
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-gray-800 mb-6">
+          Create New Product
+        </h1>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product Description</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <CreatePriceForm form={form} />
+            <Button type="submit" className="w-full">
+              Create Product
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   );
