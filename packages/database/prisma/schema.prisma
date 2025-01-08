@@ -159,18 +159,13 @@ model User {
   email                  String    @unique
   avatarUrl              String?
   acceptedTermsOfService Boolean   @default(false)
-  stripeCustomerId       String?   @unique
   blockedAt              DateTime?
   meta                   Json      @default("{}")
-  billingEmail           String?
-  billingAddress         String?
-  metadata               Json      @default("{}")
   profileSettings        Json      @default("{}")
   featureSettings        Json      @default("{}")
 
   UserNotification UserNotification[]
   stores           Store[]
-  customers        Customer[]
 }
 
 model Account {
@@ -201,7 +196,6 @@ model Account {
 
 model Customer {
   id               String   @id @default(uuid())
-  userId           String
   stripeCustomerId String?  @unique
   billingEmail     String?
   billingAddress   String?
@@ -209,10 +203,10 @@ model Customer {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user          User           @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
   subscriptions Subscription[]
   orders        Order[]
   checkouts     Checkout[]
+  userClerkId   String?
 }
 
 model Store {
