@@ -164,8 +164,9 @@ model User {
   profileSettings        Json      @default("{}")
   featureSettings        Json      @default("{}")
 
-  UserNotification UserNotification[]
-  stores           Store[]
+  notifications UserNotification[]
+  stores        Store[]
+  customers     Customer[]
 }
 
 model Account {
@@ -196,6 +197,8 @@ model Account {
 
 model Customer {
   id               String   @id @default(uuid())
+  storeId          String?
+  userId           String?  @unique
   stripeCustomerId String?  @unique
   billingEmail     String?
   billingAddress   String?
@@ -203,10 +206,12 @@ model Customer {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
+  store Store? @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user  User?  @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+
   subscriptions Subscription[]
   orders        Order[]
   checkouts     Checkout[]
-  userClerkId   String?
 }
 
 model Store {
@@ -230,6 +235,7 @@ model Store {
   products         Product[]
   licenceKeys      LicenseKey[]
   Checkout         Checkout[]
+  Customer         Customer[]
 }
 
 model Benefit {

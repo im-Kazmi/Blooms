@@ -4,8 +4,15 @@ import {
   QueryUtils,
   type SortingParams,
 } from "@/utils/query";
-import { Customer, type Prisma, type Store, prisma } from "@repo/database";
+import {
+  Customer,
+  type Prisma,
+  type Store,
+  User,
+  prisma,
+} from "@repo/database";
 import { BaseService } from "./base-service";
+import { stripeService } from ".";
 
 export class CustomerService extends BaseService {
   list(
@@ -56,38 +63,48 @@ export class CustomerService extends BaseService {
     return QueryUtils.paginateQuery(query, this.prisma.customer, params);
   }
 
-  async getCustomer(id: string, userId: string) {
+  async getById(id: string) {
     try {
-      const query = await this.prisma.store.findUnique({
-        where: { id, userId },
+      const query = await this.prisma.customer.findUnique({
+        where: { id },
       });
 
       return query;
     } catch (error) {
-      throw new Error(`Error fetching store: ${(error as Error).message}`);
+      throw new Error(`Error fetching customer: ${(error as Error).message}`);
     }
   }
 
-  async createStore(
-    data: Prisma.StoreCreateInput,
-    userId: string,
-  ): Promise<Store> {
+  async linkUser(customer: Customer, user: User) {
     try {
-      await this.prisma.store.updateMany({
+      if (customer.userId) return;
+
+      return await this.prisma.customer.update({
         where: {
-          userId,
-          active: true,
+          id: customer.id,
         },
         data: {
-          active: false,
+          user: {
+            connect: {
+              clerkId: user.clerkId,
+            },
+          },
         },
       });
-
-      return await this.prisma.store.create({
-        data,
-      });
     } catch (error) {
-      throw new Error(`Error creating store: ${(error as Error).message}`);
+      throw new Error(
+        `Error linking customer to user: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  async getOrCreateFromStripeCustomer(
+    data: Prisma.StoreCreateInput,
+    userId: string,
+  ) {
+    try {
+    } catch (error) {
+      throw new Error(`Error : ${(error as Error).message}`);
     }
   }
 }
