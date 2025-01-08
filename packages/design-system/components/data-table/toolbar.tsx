@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { Cross2Icon } from '@radix-ui/react-icons';
-import type { Table } from '@tanstack/react-table';
+import { Cross2Icon } from "@radix-ui/react-icons";
+import type { Table } from "@tanstack/react-table";
 
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { DataTableFacetedFilter } from './faceted-filter';
-import { DataTableViewOptions } from './view-options';
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
+import { DataTableFacetedFilter } from "./faceted-filter";
+import { DataTableViewOptions } from "./view-options";
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>;
@@ -28,16 +28,16 @@ export function DataTableToolbar<TData>({
       <div className="flex flex-1 items-center space-x-2">
         <Input
           placeholder="Filter tasks..."
-          value={(table.getColumn('title')?.getFilterValue() as string) ?? ''}
+          value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
           onChange={(event) =>
-            table.getColumn('title')?.setFilterValue(event.target.value)
+            table.getColumn("name")?.setFilterValue(event.target.value)
           }
           className="h-8 w-[150px] lg:w-[250px]"
         />
         {filterableColumns.map(({ id, title, options }) => (
           <DataTableFacetedFilter
-            key={id}
-            column={table.getColumn(id)}
+            key={id as string}
+            column={table.getColumn(id as string)}
             title={title}
             options={options}
           />

@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { zodResolver } from '@hookform/resolvers/zod';
-import { ProductPriceAmountType, ProductPriceType } from '@prisma/client';
-import { Button } from '@repo/design-system/components/ui/button';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ProductPriceAmountType, ProductPriceType } from "@prisma/client";
+import { Button } from "@repo/design-system/components/ui/button";
 import {
   Form,
   FormControl,
@@ -10,43 +10,45 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from '@repo/design-system/components/ui/form';
-import { Input } from '@repo/design-system/components/ui/input';
-import { toast } from '@repo/design-system/components/ui/use-toast';
-import { useForm } from 'react-hook-form';
-import * as z from 'zod';
-import { CreatePriceForm } from './create-price-form';
+} from "@repo/design-system/components/ui/form";
+import { Input } from "@repo/design-system/components/ui/input";
+import { toast, useToast } from "@repo/design-system/components/ui/use-toast";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { CreatePriceForm } from "./create-price-form";
+import { useCreateProduct } from "@repo/features/product/mutations/use-create-product";
 
 export const createProductSchema = z.object({
   name: z.string().min(2, {
-    message: 'Product name must be at least 2 characters.',
+    message: "Product name must be at least 2 characters.",
   }),
   description: z.string().optional(),
   prices: z
     .array(
       z.object({
-        type: z.enum(['one_time', 'recurring']),
-        recurringInterval: z.enum(['month', 'year']).optional(),
-        amountType: z.enum(['fixed', 'custom', 'free']),
+        type: z.enum(["one_time", "recurring"]),
+        recurringInterval: z.enum(["month", "year"]).optional(),
+        amountType: z.enum(["fixed", "custom", "free"]),
         amount: z.number().min(0).optional(),
         minimumAmount: z.number().min(0).optional(),
         maximumAmount: z.number().min(0).optional(),
         presetAmount: z.number().min(0).optional(),
-      })
+      }),
     )
     .min(1, {
-      message: 'At least one price must be added.',
+      message: "At least one price must be added.",
     }),
 });
 
 type ProductFormValues = z.infer<typeof createProductSchema>;
 
 export function CreateProductForm() {
+  const mutation = useCreateProduct();
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(createProductSchema),
     defaultValues: {
-      name: '',
-      description: '',
+      name: "",
+      description: "",
       prices: [
         {
           type: ProductPriceType.one_time,
@@ -58,13 +60,14 @@ export function CreateProductForm() {
   });
 
   function onSubmit(data: ProductFormValues) {
-    toast({
-      title: 'You submitted the following values:',
-      description: (
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
+    mutation.mutate(data, {
+      onSuccess: () => {
+        toast({ title: "product created successfully" });
+      },
+      onError: () => {
+        toast({ title: "cannot create product" });
+      },
+      onSettled: () => {},
     });
   }
 
@@ -102,8 +105,12 @@ export function CreateProductForm() {
                 </FormItem>
               )}
             />
-            <CreatePriceForm form={form} />
-            <Button type="submit" className="w-full">
+            <CreatePriceForm />
+            <Button
+              disabled={mutation.isPending}
+              type="submit"
+              className="w-full"
+            >
               Create Product
             </Button>
           </form>

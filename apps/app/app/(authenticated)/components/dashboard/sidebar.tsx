@@ -1,19 +1,19 @@
-'use client';
+"use client";
 
-import { UserButton } from '@repo/auth/client';
-import { ModeToggle } from '@repo/design-system/components/mode-toggle';
+import { UserButton } from "@repo/auth/client";
+import { ModeToggle } from "@repo/design-system/components/mode-toggle";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@repo/design-system/components/ui/collapsible';
+} from "@repo/design-system/components/ui/collapsible";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@repo/design-system/components/ui/dropdown-menu';
+} from "@repo/design-system/components/ui/dropdown-menu";
 import {
   Sidebar,
   SidebarContent,
@@ -31,8 +31,8 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   useSidebar,
-} from '@repo/design-system/components/ui/sidebar';
-import { cn } from '@repo/design-system/lib/utils';
+} from "@repo/design-system/components/ui/sidebar";
+import { cn } from "@repo/design-system/lib/utils";
 import {
   AnchorIcon,
   BookOpenIcon,
@@ -48,9 +48,9 @@ import {
   ShareIcon,
   Store,
   Trash2Icon,
-} from 'lucide-react';
-import type { ReactNode } from 'react';
-import StoreSwitcher from '../store/store-switcher';
+} from "lucide-react";
+import type { ReactNode } from "react";
+import StoreSwitcher from "../store/store-switcher";
 
 type GlobalSidebarProperties = {
   readonly children: ReactNode;
@@ -58,126 +58,112 @@ type GlobalSidebarProperties = {
 
 const data = {
   user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
+    name: "shadcn",
+    email: "m@example.com",
+    avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
     {
-      title: 'Store',
-      url: '/dashboard',
+      title: "Store",
+      url: "/dashboard",
       icon: Store,
       isActive: true,
       items: [
         {
-          title: 'Products',
-          url: '/dashboard/products',
+          title: "Products",
+          url: "/dashboard/products",
         },
         {
-          title: 'Discounts',
-          url: '/dashboard/discounts',
+          title: "Discounts",
+          url: "/dashboard/discounts",
         },
         {
-          title: 'Benefits',
-          url: '/dashboard/benefits',
+          title: "Benefits",
+          url: "/dashboard/benefits",
         },
         {
-          title: 'Licences',
-          url: '/dashboard/licences',
+          title: "Licences",
+          url: "/dashboard/licences",
         },
         {
-          title: 'Customers',
-          url: '/dashboard/customers',
+          title: "Customers",
+          url: "/dashboard/customers",
         },
         {
-          title: 'Subscriptions',
-          url: '/dashboard/subscriptions',
+          title: "Subscriptions",
+          url: "/dashboard/subscriptions",
         },
         {
-          title: 'Orders',
-          url: '/dashboard/orders',
+          title: "Orders",
+          url: "/dashboard/orders",
         },
         {
-          title: 'Sales',
-          url: '/dashboard/sales',
+          title: "Sales",
+          url: "/dashboard/sales",
         },
       ],
     },
     {
-      title: 'Documentation',
-      url: '#',
+      title: "Documentation",
+      url: "#",
       icon: BookOpenIcon,
       items: [
         {
-          title: 'Introduction',
-          url: '#',
+          title: "Introduction",
+          url: "#",
         },
         {
-          title: 'Get Started',
-          url: '#',
+          title: "Get Started",
+          url: "#",
         },
         {
-          title: 'Tutorials',
-          url: '#',
-        },
-        {
-          title: 'Changelog',
-          url: '#',
+          title: "Tutorials",
+          url: "#",
         },
       ],
     },
     {
-      title: 'Settings',
-      url: '#',
+      title: "Settings",
+      url: "#",
       icon: Settings2Icon,
       items: [
         {
-          title: 'General',
-          url: 'settings/general',
+          title: "General",
+          url: "settings/general",
         },
         {
-          title: 'Webhooks',
-          url: 'settings/webhooks',
+          title: "Webhooks",
+          url: "settings/webhooks",
         },
         {
-          title: 'Payouts',
-          url: 'settings/payouts',
+          title: "Payouts",
+          url: "settings/payouts",
         },
       ],
     },
   ],
   navSecondary: [
     {
-      title: 'Webhooks',
-      url: '/webhooks',
+      title: "Webhooks",
+      url: "/webhooks",
       icon: AnchorIcon,
     },
     {
-      title: 'Support',
-      url: '#',
+      title: "Support",
+      url: "#",
       icon: LifeBuoyIcon,
     },
     {
-      title: 'Feedback',
-      url: '#',
+      title: "Feedback",
+      url: "#",
       icon: SendIcon,
     },
   ],
   projects: [
     {
-      name: 'Design Engineering',
-      url: '#',
+      name: "Design Engineering",
+      url: "#",
       icon: FrameIcon,
-    },
-    {
-      name: 'Sales & Marketing',
-      url: '#',
-      icon: PieChartIcon,
-    },
-    {
-      name: 'Travel',
-      url: '#',
-      icon: MapIcon,
     },
   ],
 };
@@ -193,8 +179,8 @@ export const GlobalSidebar = ({ children }: GlobalSidebarProperties) => {
             <SidebarMenuItem>
               <div
                 className={cn(
-                  'h-[36px] overflow-hidden transition-all [&>div]:w-full',
-                  sidebar.open ? '' : '-mx-1'
+                  "h-[36px] overflow-hidden transition-all [&>div]:w-full",
+                  sidebar.open ? "" : "-mx-1",
                 )}
               >
                 <StoreSwitcher />
@@ -319,9 +305,9 @@ export const GlobalSidebar = ({ children }: GlobalSidebarProperties) => {
                 showName
                 appearance={{
                   elements: {
-                    rootBox: 'flex overflow-hidden w-full',
-                    userButtonBox: 'flex-row-reverse',
-                    userButtonOuterIdentifier: 'truncate pl-0',
+                    rootBox: "flex overflow-hidden w-full",
+                    userButtonBox: "flex-row-reverse",
+                    userButtonOuterIdentifier: "truncate pl-0",
                   },
                 }}
               />

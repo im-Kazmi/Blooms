@@ -1,19 +1,19 @@
-import { Hono } from 'hono';
+import { Hono } from "hono";
 
 // routers
-import product from '@/routers/product';
-import store from '@/routers/store';
-import webhooks from '@/routers/webhooks';
+import product from "./routers/product";
+import store from "./routers/store";
+import webhooks from "./routers/webhooks";
 
-const app = new Hono().basePath('/api');
+const app = new Hono().basePath("/api");
 // .use(prettyJSON())
 
 const routes = app
-  .route('/webhooks', webhooks)
-  .route('/products', product)
-  .route('/stores', store);
+  .route("/webhooks", webhooks)
+  .route("/products", product)
+  .route("/stores", store);
 
 export type AppType = typeof routes;
 
 export { app };
-export * from 'hono/client';
+export * from "hono/client";

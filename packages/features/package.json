@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
   "dependencies": {
+    "@repo/design-system": "workspace:*",
     "@repo/hono": "workspace:*",
     "@repo/react-query": "workspace:*",
     "@repo/auth": "workspace:*",

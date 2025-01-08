@@ -11,6 +11,9 @@
       "@/*": ["../hono/*", "./src/*"]
     }
   },
+  "typeAcquisition": {
+    "enable": true
+  },
   "include": ["**/*"],
   "exclude": ["node_modules"]
 }

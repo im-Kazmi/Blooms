@@ -217,6 +217,7 @@ model Store {
   files            File[]
   products         Product[]
   licenceKeys      LicenseKey[]
+  Checkout         Checkout[]
 }
 
 model Benefit {
@@ -275,6 +276,7 @@ model Checkout {
   taxAmount                Int?
   currency                 String?
   productId                String
+  storeId                  String
   productPriceId           String
   discountId               String?
   customerId               String?
@@ -285,6 +287,7 @@ model Checkout {
   customerTaxId            Json?
 
   product            Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store              Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
   productPrice       ProductPrice         @relation(fields: [productPriceId], references: [id], onDelete: Cascade)
   discount           Discount?            @relation(fields: [discountId], references: [id], onDelete: SetNull)
   subscription       Subscription?

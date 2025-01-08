@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   type ColumnDef,
@@ -11,9 +11,9 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from '@tanstack/react-table';
-import React from 'react';
-import { Skeleton } from '../ui/skeleton';
+} from "@tanstack/react-table";
+import React from "react";
+import { Skeleton } from "../ui/skeleton";
 import {
   Table,
   TableBody,
@@ -21,10 +21,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '../ui/table';
-import { DataTablePagination } from './pagination';
-import { DataTableToolbar } from './toolbar';
-export * from '@tanstack/react-table';
+} from "../ui/table";
+import { DataTablePagination } from "./pagination";
+import { DataTableToolbar } from "./toolbar";
+export * from "@tanstack/react-table";
 export type DataTableProps<TData, TValue> = {
   isLoading?: boolean;
   columns: ColumnDef<TData, TValue>[];
@@ -44,7 +44,7 @@ export function DataTable<TData, TValue>({
 }: DataTableProps<TData, TValue>) {
   const [rowSelection, setRowSelection] = React.useState({});
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
+    [],
   );
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [pagination, setPagination] = React.useState<PaginationState>({
@@ -86,7 +86,7 @@ export function DataTable<TData, TValue>({
                         ? null
                         : flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                     </TableHead>
                   );
@@ -110,14 +110,14 @@ export function DataTable<TData, TValue>({
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    data-state={row.getIsSelected() && 'selected'}
-                    className="h-12"
+                    data-state={row.getIsSelected() && "selected"}
+                    className="h-20"
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </TableCell>
                     ))}

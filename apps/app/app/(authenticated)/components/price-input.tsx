@@ -1,5 +1,5 @@
-import { Input } from '@repo/design-system/components/ui/input';
-import type React from 'react';
+import { Input } from "@repo/design-system/components/ui/input";
+import type React from "react";
 
 type Props = React.ComponentProps<typeof Input>;
 
@@ -11,7 +11,7 @@ export function PriceInput(props: Props) {
           $
         </span>
         <Input {...props} />
-        <span className="-z-10 inline-flex items-center rounded-e-lg border border-input bg-background px-3 text-sm text-muted-foreground">
+        <span className="z-10 inline-flex items-center rounded-e-lg border border-input b px-3 text-sm text-muted-foreground">
           USD
         </span>
       </div>

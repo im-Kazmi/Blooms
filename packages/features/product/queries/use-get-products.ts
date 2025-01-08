@@ -1,7 +1,7 @@
-import { client } from '@/client';
-import type { InferRequestType } from '@repo/hono';
-import { useQuery } from '@repo/react-query';
-import type { $Enums } from '../../../database';
+import { client } from "@repo/hono/client";
+import type { InferRequestType } from "@repo/hono";
+import { useQuery } from "@repo/react-query";
+import type { $Enums } from "../../../database";
 // type ResponseType = InferResponseType<
 //   typeof client.api.products.list.$get,
 //   200
@@ -26,19 +26,16 @@ type ResponseType = {
 
 type RequestType = InferRequestType<typeof client.api.products.list.$get>;
 
-export const useGetProducts = (storeId: string, values: RequestType) => {
+export const useGetProducts = (values: RequestType) => {
   const query = useQuery<ResponseType, Error>({
-    queryKey: ['get-products', {}],
+    queryKey: ["get-products", {}],
     queryFn: async () => {
       const res = await client.api.products.list.$get({
         query: values?.query,
-        param: {
-          storeId,
-        },
       });
 
       if (!res.ok) {
-        throw new Error('error getting products!');
+        throw new Error("error getting products!");
       }
 
       const data = await res.json();

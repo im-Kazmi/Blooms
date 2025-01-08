@@ -1,7 +1,15 @@
-import { prisma, Prisma, Product, ProductPrice } from "@repo/database";
+import {
+  prisma,
+  Prisma,
+  Product,
+  ProductPrice,
+  SubscriptionRecurringInterval,
+} from "@repo/database";
 import { BaseService } from "./base-service";
 import { stripe, Stripe } from "@repo/payments";
 import { UserService } from "./user";
+import { ProductPriceType } from "@repo/types/";
+import { ProductPriceAmountType } from "@repo/types/";
 // import { ProductPriceAmountType, ProductPriceType } from "@repo/types/";
 
 const userService = new UserService(prisma);
@@ -331,70 +339,80 @@ export class StripeService extends BaseService {
     }
   }
 
-  // async createPriceForProduct(
-  //   product: Product & { prices: ProductPrice[] },
-  // ): Promise<Stripe.Price[]> {
-  //   const createdPrices: Stripe.Price[] = [];
+  async createPriceForProduct(
+    productStripeId: string,
+    prices: {
+      recurringInterval?: SubscriptionRecurringInterval;
+      type: "one_time" | "recurring";
+      priceCurrency?: string;
+      amountType?: "free" | "fixed" | "custom";
+      amount?: number;
+      minimumAmount?: number;
+      maximumAmount?: number;
+      presetAmount?: number;
+    }[],
+  ): Promise<Stripe.Price[]> {
+    const createdPrices: Stripe.Price[] = [];
 
-  //   for (const price of product.prices) {
-  //     const params: Stripe.PriceCreateParams = {
-  //       currency: "usd",
-  //       product: product.stripeProductId!,
-  //     };
+    for (const price of prices) {
+      const params: Stripe.PriceCreateParams = {
+        currency: "usd",
+        product: productStripeId,
+      };
 
-  //     if (price.type === ProductPriceType.OneTime) {
-  //       switch (price.amountType) {
-  //         case ProductPriceAmountType.Free:
-  //           params.unit_amount = 0;
-  //           break;
-  //         case ProductPriceAmountType.Fixed:
-  //           params.unit_amount = price.priceAmount!;
-  //           break;
-  //         case ProductPriceAmountType.Custom:
-  //           params.custom_unit_amount = {
-  //             enabled: true,
-  //             minimum: price.minimumAmount!,
-  //             maximum: price.maximumAmount!,
-  //             preset: price.presetAmount!,
-  //           };
-  //           break;
-  //       }
-  //     } else if (price.type === ProductPriceType.Recurring) {
-  //       params.recurring = {
-  //         interval:
-  //           price.recurringInterval as Stripe.PriceCreateParams.Recurring.Interval,
-  //       };
-  //       switch (price.amountType) {
-  //         case ProductPriceAmountType.Free:
-  //           params.unit_amount = 0;
-  //           break;
-  //         case ProductPriceAmountType.Fixed:
-  //           params.unit_amount = price.priceAmount!;
-  //           break;
-  //         case ProductPriceAmountType.Custom:
-  //           params.custom_unit_amount = {
-  //             enabled: true,
-  //             minimum: price.minimumAmount!,
-  //             maximum: price.maximumAmount!,
-  //             preset: price.presetAmount!,
-  //           };
-  //           break;
-  //       }
-  //     }
+      if (price.type === ProductPriceType.OneTime) {
+        switch (price.amountType) {
+          case ProductPriceAmountType.Free:
+            params.unit_amount = 0;
+            break;
+          case ProductPriceAmountType.Fixed:
+            params.unit_amount = price.amount!;
+            break;
+          case ProductPriceAmountType.Custom:
+            params.custom_unit_amount = {
+              enabled: true,
+              minimum: price.minimumAmount!,
+              maximum: price.maximumAmount!,
+              preset: price.presetAmount!,
+            };
+            break;
+        }
+      } else if (price.type === ProductPriceType.Recurring) {
+        params.recurring = {
+          interval:
+            price.recurringInterval as Stripe.PriceCreateParams.Recurring.Interval,
+        };
+        switch (price.amountType) {
+          case ProductPriceAmountType.Free:
+            params.unit_amount = 0;
+            break;
+          case ProductPriceAmountType.Fixed:
+            params.unit_amount = price.amount!;
+            break;
+          case ProductPriceAmountType.Custom:
+            params.custom_unit_amount = {
+              enabled: true,
+              minimum: price.minimumAmount!,
+              maximum: price.maximumAmount!,
+              preset: price.presetAmount!,
+            };
+            break;
+        }
+      }
 
-  //     try {
-  //       const price = await stripe.prices.create({
-  //         ...params,
-  //       });
+      try {
+        const price = await stripe.prices.create({
+          ...params,
+        });
 
-  //       createdPrices.push(price);
-  //     } catch (error) {
-  //       throw new Error(`Error creating price: ${(error as Error).message}`);
-  //     }
-  //   }
+        createdPrices.push(price);
+      } catch (error) {
+        throw new Error(`Error creating price: ${(error as Error).message}`);
+      }
+    }
 
-  //   return createdPrices;
-  // }
+    return createdPrices;
+  }
 
   async updateProduct(productId: string, params: Stripe.ProductUpdateParams) {
     try {

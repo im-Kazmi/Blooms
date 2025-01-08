@@ -2,16 +2,19 @@ import {
   type PaginationParams,
   QueryUtils,
   type SortingParams,
-} from '@/utils/query';
+} from "@/utils/query";
 import {
   type Benefit,
   type Prisma,
+  Product,
   type ProductBenefit,
+  SubscriptionRecurringInterval,
   prisma,
-} from '@repo/database';
-import type { Stripe } from '@repo/payments';
-import { BaseService } from './base-service';
-import { StripeService } from './stripe';
+} from "@repo/database";
+import type { Stripe } from "@repo/payments";
+import { BaseService } from "./base-service";
+import { StripeService } from "./stripe";
+import { StoreService } from "./store";
 
 const stripeService = new StripeService(prisma);
 
@@ -19,7 +22,7 @@ export class ProductService extends BaseService {
   listProducts(
     params: PaginationParams &
       SortingParams<keyof Prisma.ProductOrderByWithRelationInput>,
-    storeId: string
+    storeId: string,
   ) {
     const { skip, take } = QueryUtils.getPaginationParams(params);
     const orderBy = QueryUtils.getSortingParams(params);
@@ -102,104 +105,117 @@ export class ProductService extends BaseService {
     }
   }
 
-  // async createProduct(
-  //   values: Prisma.ProductCreateInput & {
-  //     prices: {
-  //       type: "one_time" | "recurring";
-  //       priceCurrency?: string | null;
-  //       priceAmount?: number | null;
-  //     }[];
-  //     medias: Prisma.ProductMediaCreateManyProductInput[];
-  //     customFields: Prisma.ProductCustomFieldCreateManyProductInput[];
-  //   },
-  // ): Promise<Product> {
-  //   const {
-  //     productBenefits,
-  //     productCustomFields,
-  //     discountProducts,
-  //     productMedias,
-  //     ...productData
-  //   } = values;
+  async createProduct(
+    storeId: string,
+    values: {
+      name: string;
+      description: string;
+    } & {
+      prices: {
+        recurringInterval?: SubscriptionRecurringInterval;
+        type: "one_time" | "recurring";
+        priceCurrency?: string;
+        amountType?: "free" | "fixed" | "custom";
+        amount?: number;
+        minimumAmount?: number;
+        maximumAmount?: number;
+        presetAmount?: number;
+      }[];
+    },
+  ): Promise<Product> {
+    try {
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const product = await tx.product.create({
+            data: {
+              name: values.name,
+              description: values.description,
+              store: {
+                connect: {
+                  id: storeId,
+                },
+              },
+              // productMedias: values.medias.length
+              //   ? {
+              //       createMany: {
+              //         data: values.medias,
+              //       },
+              //     }
+              //   : undefined,
+              // productCustomFields: values.customFields.length
+              //   ? {
+              //       connect: values.customFields.map((field) => ({
+              //         id: field.id,
+              //       })),
+              //     }
+              //   : undefined,
+            },
+            include: {
+              prices: true,
+              productMedias: true,
+              productCustomFields: true,
+            },
+          });
 
-  //   try {
-  //     return await await .prisma.$transaction(async (tx) => {
-  //       const product = await tx.product.create({
-  //         data: {
-  //           ...productData,
-  //           productMedias: values.medias.length
-  //             ? {
-  //                 createMany: {
-  //                   data: values.medias,
-  //                 },
-  //               }
-  //             : undefined,
-  //           productCustomFields: values.customFields.length
-  //             ? {
-  //                 connect: values.customFields.map((field) => ({
-  //                   id: field.id,
-  //                 })),
-  //               }
-  //             : undefined,
-  //         },
-  //         include: {
-  //           prices: true,
-  //           productMedias: true,
-  //           productCustomFields: true,
-  //         },
-  //       });
+          if (!product) {
+            throw new Error("Failed to create the product in the database.");
+          }
 
-  //       if (!product) {
-  //         throw new Error("Failed to create the product in the database.");
-  //       }
+          const stripeProduct = await stripeService.createProduct({
+            name: product.name,
+            description: product.description ?? "",
+            metadata: {
+              productId: product.id,
+            },
+          });
 
-  //       const stripeProduct = await stripeService.createProduct({
-  //         name: product.name,
-  //         description: product.description ?? "",
-  //         metadata: {
-  //           productId: product.id,
-  //         },
-  //       });
+          if (!stripeProduct || !stripeProduct.id) {
+            throw new Error("Failed to create Stripe product.");
+          }
 
-  //       if (!stripeProduct || !stripeProduct.id) {
-  //         throw new Error("Failed to create Stripe product.");
-  //       }
+          const updatedProduct = await tx.product.update({
+            where: { id: product.id },
+            data: {
+              stripeProductId: stripeProduct.id,
+            },
+            include: {
+              prices: true,
+              productMedias: true,
+              productCustomFields: true,
+            },
+          });
 
-  //       const updatedProduct = await tx.product.update({
-  //         where: { id: product.id },
-  //         data: {
-  //           stripeProductId: stripeProduct.id,
-  //         },
-  //         include: {
-  //           prices: true,
-  //           productMedias: true,
-  //           productCustomFields: true,
-  //         },
-  //       });
+          const prices = await stripeService.createPriceForProduct(
+            updatedProduct.stripeProductId!,
+            values.prices,
+          );
 
-  //       const prices = await stripeService.createPriceForProduct(product);
+          if (!prices) throw new Error("Failed to create Stripe prices.");
 
-  //       if (!prices) throw new Error("Failed to create Stripe prices.");
+          await tx.productPrice.createMany({
+            data: prices.map((price) => ({
+              stripePriceId: price.id,
+              maximumAmount: price.custom_unit_amount?.minimum!,
+              minimumAmount: price.custom_unit_amount?.minimum!,
+              presetAmount: price.custom_unit_amount?.preset!,
+              productId: product.id,
+              priceCurrency: price.currency,
+              priceAmount: price.unit_amount,
+              recurringInterval: price.recurring
+                ?.interval as SubscriptionRecurringInterval,
+              type: price.type,
+              amountType: this.mapAmountType(price),
+            })),
+          });
 
-  //       const productPrices = await tx.productPrice.createMany({
-  //         data: prices.map((price) => ({
-  //           stripePriceId: price.id,
-  //           maximumAmount: price.custom_unit_amount?.minimum!,
-  //           minimumAmount: price.custom_unit_amount?.minimum!,
-  //           presetAmount: price.custom_unit_amount?.preset!,
-  //           productId: product.id,
-  //           priceCurrency: price.currency,
-  //           priceAmount: price.unit_amount,
-  //           recurringInterval: price.recurring?.interval,
-  //           type: price.type,
-  //           amountType: await .mapAmountType(price),
-  //         })),
-  //       });
-  //       return updatedProduct;
-  //     });
-  //   } catch (error) {
-  //     throw new Error(`Error creating product: ${(error as Error).message}`);
-  //   }
-  // }
+          return updatedProduct;
+        },
+        { timeout: 10000 },
+      );
+    } catch (error) {
+      throw new Error(`Error creating product: ${(error as Error).message}`);
+    }
+  }
 
   // async updateProduct(
   //   id: string,
@@ -322,7 +338,7 @@ export class ProductService extends BaseService {
   // }
   updateBenefits(
     product: Prisma.ProductSelect,
-    benefits: ProductBenefit['id'][]
+    benefits: ProductBenefit["id"][],
   ) {
     const prev = product.productBenefits;
     const newBenefits: Benefit[] = [];
@@ -333,14 +349,14 @@ export class ProductService extends BaseService {
   }
   private mapAmountType(price: Stripe.Price) {
     if (price.unit_amount === 0) {
-      return 'free';
+      return "free";
     }
     if (price.unit_amount !== null) {
-      return 'fixed';
+      return "fixed";
     }
     if (price.custom_unit_amount) {
-      return 'custom';
+      return "custom";
     }
-    throw new Error('Unable to determine amount type for price.');
+    throw new Error("Unable to determine amount type for price.");
   }
 }

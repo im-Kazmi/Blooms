@@ -1,5 +1,5 @@
-import { client } from '@/client';
-import { useQuery } from '@repo/react-query';
+import { client } from "@repo/hono/client";
+import { useQuery } from "@repo/react-query";
 
 type ResponseType = {
   id: string;
@@ -15,12 +15,12 @@ type ResponseType = {
 
 export const useGetActiveStore = () => {
   const query = useQuery<ResponseType>({
-    queryKey: ['get-active-stores'],
+    queryKey: ["get-active-stores"],
     queryFn: async () => {
       const res = await client.api.stores.active.$get({});
 
       if (!res.ok) {
-        throw new Error('error getting store!');
+        throw new Error("error getting store!");
       }
 
       const data = await res.json();

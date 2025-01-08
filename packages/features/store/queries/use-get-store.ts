@@ -1,24 +1,24 @@
-import { client } from '@/client';
-import type { InferResponseType } from '@repo/hono';
-import { useQuery } from '@repo/react-query';
+import { client } from "@repo/hono/client";
+import type { InferResponseType } from "@repo/hono";
+import { useQuery } from "@repo/react-query";
 type ResponseType = InferResponseType<
-  (typeof client.api.stores)[':id']['$get'],
+  (typeof client.api.stores)[":id"]["$get"],
   200
 >;
 
 export const useGetStore = (id: string) => {
   const query = useQuery<ResponseType, Error>({
     enabled: !!id,
-    queryKey: ['get-stores', { id }],
+    queryKey: ["get-stores", { id }],
     queryFn: async () => {
-      const res = await client.api.stores[':id'].$get({
+      const res = await client.api.stores[":id"].$get({
         param: {
           id,
         },
       });
 
       if (!res.ok) {
-        throw new Error('error getting store!');
+        throw new Error("error getting store!");
       }
 
       const data = await res.json();
