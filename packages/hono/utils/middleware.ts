@@ -1,22 +1,21 @@
-import { createMiddleware } from 'hono/factory';
+import { auth } from "@repo/auth/server";
+import { createMiddleware } from "hono/factory";
 
 type Env = {
   Variables: {
-    user: any;
+    user: AuthObject;
   };
 };
 
 export const authMiddleware = () => {
   return createMiddleware<Env>(async (c, next) => {
-    const user = {
-      id: 'asdf',
-    };
+    const user = await auth();
 
-    if (!user || !user.id) {
-      return c.json('UNAUTHORIZED', 400);
+    if (!user || !user.userId) {
+      return c.json("UNAUTHORIZED", 400);
     }
 
-    c.set('user', user);
+    c.set("user", user);
 
     await next();
   });

@@ -4,9 +4,9 @@ import { Hono } from "hono";
 import product from "./routers/product";
 import store from "./routers/store";
 import webhooks from "./routers/webhooks";
+import { prettyJSON } from "hono/pretty-json";
 
-const app = new Hono().basePath("/api");
-// .use(prettyJSON())
+const app = new Hono().basePath("/api").use(prettyJSON());
 
 const routes = app
   .route("/webhooks", webhooks)

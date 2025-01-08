@@ -3,15 +3,14 @@ import {
   type PaginationParams,
   QueryUtils,
   type SortingParams,
-} from '@/utils/query';
-import { type Prisma, type Store, prisma } from '@repo/database';
-import { BaseService } from './base-service';
-
+} from "@/utils/query";
+import { type Prisma, type Store, prisma } from "@repo/database";
+import { BaseService } from "./base-service";
 export class StoreService extends BaseService {
   listStores(
     params: PaginationParams &
       SortingParams<keyof Prisma.StoreOrderByWithRelationInput>,
-    userId: string
+    userId: string,
   ): Promise<PaginatedResult<Store>> {
     const { skip, take } = QueryUtils.getPaginationParams(params);
     const orderBy = QueryUtils.getSortingParams(params);
@@ -52,14 +51,14 @@ export class StoreService extends BaseService {
       return query;
     } catch (error) {
       throw new Error(
-        `Error fetching active store: ${(error as Error).message}`
+        `Error fetching active store: ${(error as Error).message}`,
       );
     }
   }
 
   async createStore(
     data: Prisma.StoreCreateInput,
-    userId: string
+    userId: string,
   ): Promise<Store> {
     try {
       await this.prisma.store.updateMany({

@@ -1,4 +1,4 @@
-import { productService, storeService } from "../serices";
+import { productHonoService, storeHonoService } from "../serices";
 import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
@@ -35,8 +35,8 @@ export const createProductSchema = z.object({
 
 const app = new Hono()
   .use(clerkMiddleware())
-  .use(productService.middleware("productService"))
-  .use(storeService.middleware("storeService"))
+  .use(productHonoService.middleware("productService"))
+  .use(storeHonoService.middleware("storeService"))
   .get("/list", zValidator("query", sortingAndPaginationSchema), async (c) => {
     const auth = getAuth(c);
 

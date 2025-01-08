@@ -50,4 +50,25 @@ export class CheckoutService extends BaseService {
 
     return QueryUtils.paginateQuery(query, this.prisma.checkout, params);
   }
+
+  async getById(id: string) {
+    try {
+      const query = await this.prisma.checkout.findFirst({
+        where: {
+          id,
+        },
+        include: {},
+      });
+
+      return query;
+    } catch (error) {
+      throw new Error(`Error getting checkout: ${(error as Error).message}`);
+    }
+  }
+  async create(storeId: string, values: Prisma.CheckoutCreateInput) {
+    try {
+    } catch (error) {
+      throw new Error(`Error creating chekcout: ${(error as Error).message}`);
+    }
+  }
 }
