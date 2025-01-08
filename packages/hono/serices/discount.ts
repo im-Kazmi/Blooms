@@ -187,7 +187,7 @@ export class DiscoundService extends BaseService {
       return query;
     } catch (error) {
       throw new Error(
-        `Error getting discount with producte: ${(error as Error).message}`,
+        `Error getting discount with stripeCouponId: ${(error as Error).message}`,
       );
     }
   }
@@ -203,7 +203,7 @@ export class DiscoundService extends BaseService {
       }
 
       if (values.code) {
-        const exists = await this.getByCode(values.code, store.id);
+        const exists = await this.getByCodeAndStore(values.code, store.id);
 
         if (exists) {
           throw new Error("discount with this code already exits.");

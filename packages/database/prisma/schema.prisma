@@ -163,12 +163,14 @@ model User {
   blockedAt              DateTime?
   meta                   Json      @default("{}")
   billingEmail           String?
+  billingAddress         String?
   metadata               Json      @default("{}")
   profileSettings        Json      @default("{}")
   featureSettings        Json      @default("{}")
 
   UserNotification UserNotification[]
   stores           Store[]
+  customers        Customer[]
 }
 
 model Account {
@@ -195,6 +197,22 @@ model Account {
   store Store @relation(fields: [storeId], references: [id])
 
   Transaction Transaction[]
+}
+
+model Customer {
+  id               String   @id @default(uuid())
+  userId           String
+  stripeCustomerId String?  @unique
+  billingEmail     String?
+  billingAddress   String?
+  metadata         Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [clerkId], onDelete: Cascade)
+  subscriptions Subscription[]
+  orders        Order[]
+  checkouts     Checkout[]
 }
 
 model Store {
@@ -293,6 +311,7 @@ model Checkout {
   subscription       Subscription?
   order              Order?
   DiscountRedemption DiscountRedemption[]
+  Customer           Customer?            @relation(fields: [customerId], references: [id])
 }
 
 model CustomField {
@@ -430,7 +449,7 @@ model Order {
   billingReason   String
   billingAddress  Json?
   stripeInvoiceId String?
-  userId          String
+  customerId      String
   productId       String
   productPriceId  String
   discountId      String?
@@ -444,6 +463,7 @@ model Order {
   checkout      Checkout?      @relation(fields: [checkoutId], references: [id], onDelete: SetNull)
   benefitGrants BenefitGrant[]
   Transaction   Transaction[]
+  Customer      Customer       @relation(fields: [customerId], references: [id])
 }
 
 model Product {
@@ -557,6 +577,7 @@ model Subscription {
   metadata             Json?
 
   product  Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
   price    ProductPrice   @relation(fields: [priceId], references: [id], onDelete: Cascade)
   discount Discount?      @relation(fields: [discountId], references: [id], onDelete: SetNull)
   checkout Checkout?      @relation(fields: [checkoutId], references: [id], onDelete: SetNull)
