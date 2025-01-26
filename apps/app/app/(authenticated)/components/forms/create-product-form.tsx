@@ -72,49 +72,48 @@ export function CreateProductForm() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto  rounded-2xl shadow-xl overflow-hidden ">
-      <div className="p-8">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6">
-          Create New Product
-        </h1>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Product Description</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <CreatePriceForm />
-            <Button
-              disabled={mutation.isPending}
-              type="submit"
-              className="w-full"
-            >
-              Create Product
-            </Button>
-          </form>
-        </Form>
+    <div className="p-8">
+      <div className="max-w-4xl mx-auto  rounded-2xl border overflow-hidden bg-white ">
+        <div className="p-8">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Product Description</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <CreatePriceForm />
+              <Button
+                disabled={mutation.isPending}
+                type="submit"
+                className="w-full"
+              >
+                Create Product
+              </Button>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   );

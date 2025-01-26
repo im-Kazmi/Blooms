@@ -7,12 +7,15 @@ import { useGetStores } from "@repo/features/store/queries/use-get-stores";
 import { type ReactNode, useEffect } from "react";
 import { GlobalSidebar } from "../components/dashboard/sidebar";
 import { OnBoardingDialog } from "../components/dialogs/onboarding-dialog";
+import { usePathname } from "next/navigation";
 type AppLayoutProperties = {
   readonly children: ReactNode;
 };
 
 const AppLayout = ({ children }: AppLayoutProperties) => {
   const { user, isSignedIn } = useUser();
+
+  const pathname = usePathname();
 
   const { onOpen } = useOnboardingDialog();
 
@@ -28,6 +31,10 @@ const AppLayout = ({ children }: AppLayoutProperties) => {
     }
   }, [isLoading]);
 
+  // we are hiding sidebar of new prod page
+  if (pathname.includes("/products/new")) {
+    return children;
+  }
   return (
     <SidebarProvider>
       <GlobalSidebar>
