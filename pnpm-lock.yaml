@@ -59,7 +59,7 @@ importers:
       '@repo/features':
         specifier: workspace:^
         version: link:../../packages/features
-      '@repo/hono':
+      '@repo/api':
         specifier: workspace:*
         version: link:../../packages/hono
       '@repo/next-config':
@@ -649,7 +649,7 @@ importers:
       '@repo/design-system':
         specifier: workspace:*
         version: link:../design-system
-      '@repo/hono':
+      '@repo/api':
         specifier: workspace:*
         version: link:../hono
       '@repo/observability':

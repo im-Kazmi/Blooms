@@ -1,4 +1,4 @@
-import { client } from "@repo/hono/client";
+import { client } from "@repo/api/client";
 import { useQuery } from "@repo/react-query";
 
 type ResponseType = {

@@ -1,5 +1,5 @@
-import { client } from "@repo/hono/client";
-import type { InferRequestType, InferResponseType } from "@repo/hono";
+import { client } from "@repo/api/client";
+import type { InferRequestType, InferResponseType } from "@repo/api";
 import { useMutation, useQueryClient } from "@repo/react-query";
 
 type ResponseType = InferResponseType<typeof client.api.products.$post, 200>;

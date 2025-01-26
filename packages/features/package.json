@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@repo/design-system": "workspace:*",
-    "@repo/hono": "workspace:*",
+    "@repo/api": "workspace:*",
     "@repo/react-query": "workspace:*",
     "@repo/auth": "workspace:*",
     "@repo/observability": "workspace:*",

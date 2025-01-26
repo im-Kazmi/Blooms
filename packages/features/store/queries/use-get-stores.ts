@@ -1,5 +1,5 @@
-import { client } from "@repo/hono/client";
-import type { InferResponseType } from "@repo/hono";
+import { client } from "@repo/api/client";
+import type { InferResponseType } from "@repo/api/index";
 import { useQuery } from "@repo/react-query";
 type ResponseType = InferResponseType<typeof client.api.stores.$get, 200>;
 

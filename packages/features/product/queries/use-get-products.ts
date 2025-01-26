@@ -1,5 +1,5 @@
-import { client } from "@repo/hono/client";
-import type { InferRequestType } from "@repo/hono";
+import { client } from "@repo/api/client";
+import type { InferRequestType } from "@repo/api/index";
 import { useQuery } from "@repo/react-query";
 import type { $Enums } from "../../../database";
 // type ResponseType = InferResponseType<

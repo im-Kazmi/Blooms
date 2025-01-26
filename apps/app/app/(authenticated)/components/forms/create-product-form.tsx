@@ -12,6 +12,8 @@ import {
   FormMessage,
 } from "@repo/design-system/components/ui/form";
 import { Input } from "@repo/design-system/components/ui/input";
+import { Textarea } from "@repo/design-system/components/ui/textarea";
+import { ScrollArea } from "@repo/design-system/components/ui/scroll-area";
 import { toast, useToast } from "@repo/design-system/components/ui/use-toast";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -73,48 +75,50 @@ export function CreateProductForm() {
 
   return (
     <div className="p-8">
-      <div className="max-w-4xl mx-auto  rounded-2xl border overflow-hidden bg-white ">
-        <div className="p-8">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Product Description</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <CreatePriceForm />
-              <Button
-                disabled={mutation.isPending}
-                type="submit"
-                className="w-full"
-              >
-                Create Product
-              </Button>
-            </form>
-          </Form>
-        </div>
-      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="">
+          <div className="max-w-4xl mx-auto  rounded-2xl border overflow-hidden bg-white ">
+            <ScrollArea className="p-8 h-[600px] ">
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="mysaas" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="mysaas bla bla bla" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <CreatePriceForm />
+              </div>
+            </ScrollArea>
+          </div>
+          <Button
+            disabled={mutation.isPending}
+            type="submit"
+            className="w-full"
+          >
+            Create Product
+          </Button>
+        </form>
+      </Form>
     </div>
   );
 }
