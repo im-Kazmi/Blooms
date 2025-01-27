@@ -13,6 +13,7 @@
     "@hono/clerk-auth": "^2.0.0",
     "@hono/zod-validator": "^0.4.2",
     "@repo/auth": "workspace:*",
+    "@repo/shared": "workspace:*",
     "@repo/analytics": "workspace:*",
     "@repo/env": "workspace:*",
     "@repo/database": "workspace:*",

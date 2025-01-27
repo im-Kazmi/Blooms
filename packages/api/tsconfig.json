@@ -3,7 +3,8 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@repo/*": ["./*"]
+      "@repo/*": ["./*"],
+      "@repo/shared/*": ["../shared/*", "./*"]
     },
     "target": "ESNext",
     "module": "ESNext",

@@ -7,6 +7,7 @@ import {
   ProductPriceType,
   prisma,
 } from "@repo/database";
+import { COUNTRY_TAX_ID_MAP } from "@repo/shared/index";
 
 export class ValidationService {
   async getValidatedPrice(priceId: string) {
@@ -36,7 +37,22 @@ export class ValidationService {
         );
       }
 
-      return { price, product: price.product };
+      return {
+        amountType: price.amountType,
+        maximumAmount: price.maximumAmount,
+        minimumAmount: price.minimumAmount,
+        presetAmount: price.presetAmount,
+        priceCurrency: price.priceCurrency,
+        stripePriceId: price.stripePriceId,
+        isArchived: price.isArchived,
+        priceAmount: price.priceAmount,
+        productId: price.productId,
+        recurringInterval: price.recurringInterval,
+        type: price.type,
+        createdAt: price.createdAt,
+        id: price.id,
+        updatedAt: price.updatedAt,
+      };
     } catch (err) {
       console.log(err);
     }
@@ -162,5 +178,15 @@ export class ValidationService {
 
   isValidAmountTypeForDiscount(value: any): value is ProductPriceAmountType {
     return value === "fixed" || value === "custom";
+  }
+
+  getValidatedTax(taxId: string, countryCode: string) {
+    const taxIds = COUNTRY_TAX_ID_MAP[countryCode];
+
+    if (!taxIds) {
+      throw new Error("unsupported country");
+    }
+
+    return taxIds;
   }
 }
